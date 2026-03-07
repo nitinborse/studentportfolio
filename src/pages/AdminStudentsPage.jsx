@@ -33,7 +33,7 @@ export default function AdminStudentsPage() {
       setLoading(true);
       setErr("");
       try {
-        const rows = await fetchStudentsForSchool(schoolId || null);
+        const rows = await fetchStudentsForSchool(schoolId || null, teacherId);
         if (!alive) return;
         setStudents(rows || []);
       } catch (e) {

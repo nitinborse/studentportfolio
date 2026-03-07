@@ -28,7 +28,7 @@ export default function TeacherHierarchy() {
       setLoading(true);
       setErr("");
       try {
-        const studentRows = await fetchStudentsForSchool(profile?.school_id || null);
+        const studentRows = await fetchStudentsForSchool(profile?.school_id || null, profile?.id);
         if (!alive) return;
         setStudents(studentRows || []);
       } catch (e) {

@@ -1,11 +1,14 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { createUser, fetchProfilesForSchool, fetchStudentsForSchool } from "../services/adminApi";
+import { createUser, createSchool, fetchProfilesForSchool, fetchStudentsForSchool } from "../services/adminApi";
+import { supabase } from "../services/supabase";
 
 export default function SuperAdminDashboard() {
   const { profile, logout } = useAuth();
 
+  const [schools, setSchools] = useState([]);
+  const [newSchoolName, setNewSchoolName] = useState("");
   const [createSchoolId, setCreateSchoolId] = useState("");
   const [listSchoolId, setListSchoolId] = useState("");
   const [email, setEmail] = useState("");
@@ -22,12 +25,14 @@ export default function SuperAdminDashboard() {
   async function loadList() {
     setErr("");
     try {
-      const [profileList, studentsList] = await Promise.all([
+      const [profileList, studentsList, schoolsList] = await Promise.all([
         fetchProfilesForSchool(listSchoolId || null),
-        fetchStudentsForSchool(listSchoolId || null),
+        fetchStudentsForSchool(listSchoolId || null, null),
+        supabase.from('schools').select('*').order('name')
       ]);
       setRows(profileList);
       setStudentRows(studentsList);
+      setSchools(schoolsList.data || []);
     } catch (e) {
       setErr(e.message);
     }
@@ -48,27 +53,72 @@ export default function SuperAdminDashboard() {
     ? studentRows.filter((r) => r.school_id === selectedSchoolId)
     : studentRows;
 
+  function generateUUID() {
+    return crypto.randomUUID();
+  }
+
+  const handleCreateSchool = async () => {
+    if (!newSchoolName.trim()) {
+      setErr('School name required');
+      return;
+    }
+    try {
+      const school = await createSchool(newSchoolName.trim());
+      setSchools([...schools, school]);
+      setCreateSchoolId(school.id);
+      setNewSchoolName('');
+      setMsg(`School created: ${school.name} (${school.id})`);
+    } catch (e) {
+      setErr(e.message);
+    }
+  };
+
   const handleCreate = async (e) => {
     e.preventDefault();
     setMsg("");
     setErr("");
+    
+    if (!createSchoolId?.trim()) {
+      setErr("School UUID is required");
+      return;
+    }
+    
+    if (!email?.trim()) {
+      setErr("Email is required");
+      return;
+    }
+    
+    if (!password?.trim()) {
+      setErr("Password is required");
+      return;
+    }
+    
+    if (!fullName?.trim()) {
+      setErr("School Name is required");
+      return;
+    }
+    
     setLoading(true);
 
     try {
+      console.log('Creating user with:', { email, role: 'admin', school_id: createSchoolId, full_name: fullName });
+      
       const res = await createUser({
         email,
         password,
         full_name: fullName,
         role: "admin",
-        school_id: createSchoolId || null,
+        school_id: createSchoolId,
       });
 
-      setMsg(`User created OK. ID: ${res?.id}`);
+      setMsg(`Admin created successfully! ID: ${res?.user_id}`);
       setEmail("");
       setPassword("");
       setFullName("");
+      setCreateSchoolId("");
       await loadList();
     } catch (e2) {
+      console.error('Create user error:', e2);
       setErr(e2.message);
     } finally {
       setLoading(false);
@@ -92,27 +142,85 @@ export default function SuperAdminDashboard() {
 
       <div className="ui-layout two">
         <div className="ui-card">
-          <h3>Add School</h3>
-          <form onSubmit={handleCreate} className="ui-grid">
+          <h3>Create New School</h3>
+          <div className="ui-grid">
             <div className="ui-field">
-              <label>School UUID</label>
+              <label>School Name</label>
               <input
-                placeholder="Optional for admin"
-                value={createSchoolId}
-                onChange={(e) => setCreateSchoolId(e.target.value)}
+                placeholder="Enter school name"
+                value={newSchoolName}
+                onChange={(e) => setNewSchoolName(e.target.value)}
               />
             </div>
             <div className="ui-field">
+              <label>School UUID (auto-generated)</label>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <input
+                  placeholder="Click generate"
+                  value={createSchoolId}
+                  onChange={(e) => setCreateSchoolId(e.target.value)}
+                  style={{ flex: 1 }}
+                />
+                <button className="ui-btn" type="button" onClick={() => setCreateSchoolId(generateUUID())}>
+                  Generate
+                </button>
+              </div>
+            </div>
+            <button className="ui-btn" type="button" onClick={handleCreateSchool}>
+              Create School
+            </button>
+            <p style={{ fontSize: 12, color: '#64748b' }}>Note: Save the UUID after creating school</p>
+          </div>
+        </div>
+
+        <div className="ui-card">
+          <h3>Create Admin for School</h3>
+          <form onSubmit={handleCreate} className="ui-grid">
+            <div className="ui-field">
+              <label>School UUID</label>
+              <select
+                value={createSchoolId}
+                onChange={(e) => {
+                  const schoolId = e.target.value;
+                  setCreateSchoolId(schoolId);
+                  const school = schools.find(s => s.id === schoolId);
+                  if (school) setFullName(school.name);
+                }}
+              >
+                <option value="">-- Select a school --</option>
+                {schools.map(s => (
+                  <option key={s.id} value={s.id}>{s.name}</option>
+                ))}
+              </select>
+            </div>
+            <div className="ui-field">
               <label>School Name</label>
-              <input placeholder="Name" value={fullName} onChange={(e) => setFullName(e.target.value)} />
+              <input 
+                placeholder="Auto-filled from school selection" 
+                value={fullName} 
+                readOnly
+              />
             </div>
             <div className="ui-field">
-              <label>Email</label>
-              <input placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
+              <label>Email (Required)</label>
+              <input 
+                type="email"
+                placeholder="admin@school.com" 
+                value={email} 
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
             </div>
             <div className="ui-field">
-              <label>Password</label>
-              <input placeholder="Password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
+              <label>Password (Required)</label>
+              <input 
+                placeholder="Min 6 characters" 
+                type="password" 
+                value={password} 
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                minLength={6}
+              />
             </div>
             <button className="ui-btn primary" type="submit" disabled={loading}>
               {loading ? "Creating..." : "Create Admin"}
@@ -122,7 +230,7 @@ export default function SuperAdminDashboard() {
           </form>
         </div>
 
-        <div className="ui-card">
+        {/* <div className="ui-card">
           <h3>Filters</h3>
           <div className="ui-grid">
             <div className="ui-field">
@@ -149,7 +257,7 @@ export default function SuperAdminDashboard() {
                 : "Viewing all schools."}
             </p>
           </div>
-        </div>
+        </div> */}
       </div>
 
       <div className="ui-stat-grid">

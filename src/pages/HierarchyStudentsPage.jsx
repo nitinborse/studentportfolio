@@ -38,7 +38,7 @@ export default function HierarchyStudentsPage() {
       setLoading(true);
       setErr("");
       try {
-        const rows = await fetchStudentsForHierarchy();
+        const rows = await fetchStudentsForHierarchy(teacherId);
         if (!alive) return;
         setStudents(rows || []);
       } catch (e) {
@@ -52,17 +52,13 @@ export default function HierarchyStudentsPage() {
     return () => {
       alive = false;
     };
-  }, []);
+  }, [teacherId]);
 
   const teacherKey = useMemo(() => pickTeacherKey(students), [students]);
 
   const scoped = useMemo(() => {
-    if (teacherKey) {
-      const byTeacher = students.filter((s) => String(s?.[teacherKey] || "") === String(teacherId || ""));
-      if (byTeacher.length) return byTeacher;
-    }
-    return students.filter((s) => String(s?.school_id || "") === String(schoolId || ""));
-  }, [students, teacherId, schoolId, teacherKey]);
+    return students;
+  }, [students]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();

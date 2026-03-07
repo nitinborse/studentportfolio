@@ -88,7 +88,7 @@ export default function AdminDashboard() {
     try {
       const [profiles, studentRows] = await Promise.all([
         fetchProfilesForSchool(profile.school_id),
-        fetchStudentsForSchool(profile.school_id),
+        fetchStudentsForSchool(profile.school_id, null),
       ]);
       setTeachers((profiles || []).filter((p) => p.role === "teacher"));
       setStudents(studentRows || []);

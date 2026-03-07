@@ -1,5 +1,21 @@
 import { supabase } from "./supabase";
 
+export async function createSchool(schoolName) {
+  const slug = schoolName
+    .toLowerCase()
+    .replace(/\s+/g, '-')
+    .replace(/[^a-z0-9-]/g, '');
+  
+  const { data, error } = await supabase
+    .from('schools')
+    .insert({ name: schoolName, slug })
+    .select()
+    .single();
+  
+  if (error) throw error;
+  return data;
+}
+
 export async function createUser({ email, password, full_name, role, school_id }) {
   const payload = { email, password, full_name, role, school_id };
 
@@ -114,7 +130,7 @@ export async function fetchStudentBySlug(studentSlug) {
   return data || null;
 }
 
-export async function fetchStudentsForSchool(school_id) {
+export async function fetchStudentsForSchool(school_id, teacher_id) {
   let q = supabase
     .from("students")
     .select("id, full_name, school_id, slug, class, section, profile_photo, created_at");
@@ -122,17 +138,27 @@ export async function fetchStudentsForSchool(school_id) {
   if (school_id) {
     q = q.eq("school_id", school_id);
   }
+  
+  if (teacher_id) {
+    q = q.eq("teacher_id", teacher_id);
+  }
 
   const { data, error } = await q.order("created_at", { ascending: false });
   if (error) throw error;
   return data || [];
 }
 
-export async function fetchStudentsForHierarchy() {
-  const { data, error } = await supabase
+export async function fetchStudentsForHierarchy(teacherId = null) {
+  let query = supabase
     .from("students")
     .select("*")
     .order("created_at", { ascending: false });
+  
+  if (teacherId) {
+    query = query.eq("teacher_id", teacherId);
+  }
+  
+  const { data, error } = await query;
   if (error) throw error;
   return data || [];
 }

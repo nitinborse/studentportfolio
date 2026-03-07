@@ -28,7 +28,7 @@ export default function TeacherDashboard() {
     if (!profile?.school_id) return;
     setErr("");
     try {
-      const list = await fetchStudentsForSchool(profile.school_id);
+      const list = await fetchStudentsForSchool(profile.school_id, profile.id);
       setStudents(list);
     } catch (e) {
       setErr(e.message || "Failed to load students.");
