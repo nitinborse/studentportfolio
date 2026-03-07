@@ -129,7 +129,7 @@ export default function AdminTeacherStudentHierarchy() {
         <h2>Admin Teacher Student Hierarchy</h2>
         <p>Drill-down view with search and pagination for large datasets.</p>
         <div className="ui-chip-row">
-          <Link to="/super-admin" className="ui-btn">Back to Super Admin</Link>
+          <Link to="/super-admin" className="ui-chip">Back to Super Admin</Link>
           <span className="ui-chip">Admins: {admins.length}</span>
           <span className="ui-chip">Teachers: {teachers.length}</span>
           <span className="ui-chip">Students: {students.length}</span>

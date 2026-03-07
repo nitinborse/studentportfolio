@@ -8,14 +8,21 @@ export async function createUser({ email, password, full_name, role, school_id }
   });
 
   if (error) {
-    // Supabase returns function errors here
+    console.error('Edge function error:', error);
     throw new Error(error.message || "Failed to create user");
   }
 
-  // Your edge function returns { ok: true, id: "..." } or { error: "..." }
-  if (data?.error) throw new Error(data.error);
+  if (data?.error) {
+    console.error('Edge function returned error:', data.error);
+    throw new Error(data.error);
+  }
 
-  return data; // { ok: true, id: "new-user-uuid" }
+  if (!data?.ok) {
+    console.error('Edge function response:', data);
+    throw new Error(data?.message || "User creation failed");
+  }
+
+  return data;
 }
 
 function slugFromName(name) {
@@ -47,7 +54,6 @@ export async function createStudentNoLogin({ full_name, school_id, teacher_id })
     .select("id, full_name, school_id, slug, class, section, profile_photo, created_at")
     .single());
 
-  // Backward-compatible fallback for schemas without teacher_id.
   if (error && teacher_id) {
     const retryPayload = { full_name, school_id, slug };
     ({ data, error } = await supabase
@@ -297,6 +303,12 @@ export async function uploadStudentFile({ bucket, studentId, file, folder = "upl
 export async function saveStudentProfileStructured(studentId, rawProfile) {
   const profile = rawProfile || {};
   const fullName = [profile.firstName, profile.middleName, profile.lastName].filter(Boolean).join(" ").trim();
+  const newSlug = [profile.firstName, profile.middleName, profile.lastName]
+    .filter(Boolean)
+    .join("-")
+    .toLowerCase()
+    .replace(/[^a-z0-9-]/g, "") || "student";
+  
   const themeName = String(profile.theme || "").trim();
   let themeId = null;
   if (themeName) {
@@ -306,6 +318,7 @@ export async function saveStudentProfileStructured(studentId, rawProfile) {
 
   const studentPatch = {
     full_name: fullName || undefined,
+    slug: newSlug,
     class: profile.className || null,
     section: profile.section || null,
     profile_photo:
@@ -316,7 +329,9 @@ export async function saveStudentProfileStructured(studentId, rawProfile) {
   const upStudent = await supabase
     .from("students")
     .update(studentPatch)
-    .eq("id", studentId);
+    .eq("id", studentId)
+    .select("id, full_name, slug, school_id, class, section, profile_photo")
+    .single();
   if (upStudent.error) throw upStudent.error;
 
   const portfolioPayload = {
@@ -377,13 +392,7 @@ export async function saveStudentProfileStructured(studentId, rawProfile) {
 
   const shadow = await upsertStudentProfile(studentId, profile);
   return {
-    student: {
-      id: studentId,
-      full_name: studentPatch.full_name || null,
-      class: studentPatch.class || null,
-      section: studentPatch.section || null,
-      profile_photo: studentPatch.profile_photo || null,
-    },
+    student: upStudent.data,
     profile: shadow,
   };
 }

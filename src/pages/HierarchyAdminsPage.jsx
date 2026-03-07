@@ -59,7 +59,7 @@ export default function HierarchyAdminsPage() {
         <h2>Admins</h2>
         <p>Select an admin to view teachers under that admin.</p>
         <div className="ui-chip-row">
-          <Link to="/super-admin" className="ui-btn">Back to Super Admin</Link>
+          <Link to="/super-admin" className="ui-chip">Back to Super Admin</Link>
           <span className="ui-chip">Total Admins: {filtered.length}</span>
           <button className="ui-btn danger" onClick={async () => { await logout(); navigate("/login"); }}>Logout</button>
         </div>

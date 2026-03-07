@@ -79,7 +79,7 @@ export default function TeacherHierarchy() {
         <h2>My Students</h2>
         <p>View and manage all students assigned to you.</p>
         <div className="ui-chip-row">
-          <Link to="/teacher" className="ui-btn">Back to Teacher Dashboard</Link>
+          <Link to="/teacher" className="ui-chip">Back to Teacher Dashboard</Link>
           <span className="ui-chip">Total Students: {filteredStudents.length}</span>
           <button className="ui-btn danger" onClick={async () => { await logout(); navigate("/login"); }}>Logout</button>
         </div>

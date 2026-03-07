@@ -70,7 +70,7 @@ export default function TeacherDashboard() {
         <div className="ui-chip-row">
           <span className="ui-chip">Name: {profile?.full_name || "-"}</span>
           <span className="ui-chip">School: {profile?.school_id || "-"}</span>
-          <Link to="/teacher/hierarchy" className="ui-btn">View All Students</Link>
+          <Link to="/teacher/hierarchy" className="ui-chip">View All Students</Link>
           <button className="ui-btn danger" onClick={logout}>Logout</button>
         </div>
       </div>

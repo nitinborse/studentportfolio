@@ -95,7 +95,7 @@ export default function HierarchyStudentsPage() {
         <h2>Students</h2>
         <p>Teacher: {teacherName || teacherId}</p>
         <div className="ui-chip-row">
-          <Link to={backToTeachers} className="ui-btn">
+          <Link to={backToTeachers} className="ui-chip">
             Back to Teachers
           </Link>
           <span className="ui-chip">School ID: {schoolId || "-"}</span>

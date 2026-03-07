@@ -57,7 +57,7 @@ export default function AdminTeachersPage() {
         <h2>Teachers</h2>
         <p>Select a teacher to view their students.</p>
         <div className="ui-chip-row">
-          <Link to="/admin" className="ui-btn">Back to Admin Dashboard</Link>
+          <Link to="/admin" className="ui-chip">Back to Admin Dashboard</Link>
           <span className="ui-chip">Total Teachers: {filtered.length}</span>
           <button className="ui-btn danger" onClick={async () => { await logout(); navigate("/login"); }}>Logout</button>
         </div>

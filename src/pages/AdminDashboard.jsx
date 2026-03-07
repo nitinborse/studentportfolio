@@ -169,7 +169,7 @@ export default function AdminDashboard() {
         <div className="ui-chip-row">
           <span className="ui-chip">School Name: {profile?.full_name || "-"}</span>
           <span className="ui-chip">School ID: {profile?.school_id || "-"}</span>
-          <Link to="/admin/hierarchy" className="ui-btn">Hierarchy View</Link>
+          <Link to="/admin/hierarchy" className="ui-chip">Hierarchy View</Link>
           <button className="ui-btn danger" onClick={logout}>Logout</button>
         </div>
       </div>

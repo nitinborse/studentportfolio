@@ -81,9 +81,11 @@ export default function SuperAdminDashboard() {
         <h2>Super Admin Dashboard</h2>
         <p>Create staff accounts and manage all schools, teachers, and students.</p>
         <div className="ui-chip-row">
-          <span className="ui-chip">Name: {profile?.full_name || "-"}</span>
-          <span className="ui-chip">Role: {profile?.role || "-"}</span>
-          <Link to="/super-admin/hierarchy/admins" className="ui-btn">Hierarchy View</Link>
+          {/* <Link to="/super-admin" className="ui-chip">Back to Super Admin</Link> */}
+          <span className="ui-chip">Admins: {adminRows.length}</span>
+          <span className="ui-chip">Teachers: {visibleTeachers.length}</span>
+          <span className="ui-chip">Students: {visibleStudents.length}</span>
+          <Link to="/super-admin/hierarchy/admins" className="ui-chip">Hierarchy View</Link>
           <button className="ui-btn danger" onClick={logout}>Logout</button>
         </div>
       </div>

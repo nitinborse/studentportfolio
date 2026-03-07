@@ -305,7 +305,21 @@ export default function StudentProfileEditor() {
       setProfile((prev) => ({ ...prev, ...clean }));
       setListInputs(buildListInputState(clean));
       setTestimonialsInput(listToLines(clean.testimonials));
-      await saveStudentProfileStructured(studentId, clean);
+      
+      const result = await saveStudentProfileStructured(studentId, clean);
+      
+      // Update slug if name changed
+      const newSlug = result?.student?.slug || 
+        [clean.firstName, clean.middleName, clean.lastName]
+          .filter(Boolean)
+          .join("-")
+          .toLowerCase()
+          .replace(/[^a-z0-9-]/g, "");
+      
+      if (newSlug && student?.slug !== newSlug) {
+        setStudent((prev) => ({ ...prev, slug: newSlug }));
+      }
+      
       setMsg("Profile updated and stored in database tables.");
     } catch (e2) {
       setErr(e2.message || "Failed to save profile.");
