@@ -191,7 +191,9 @@ function writeStorage(key, value) {
   try {
     if (value == null) localStorage.removeItem(key);
     else localStorage.setItem(key, JSON.stringify(value));
-  } catch {}
+  } catch (error) {
+    console.error('Storage write error:', error);
+  }
 }
 
 export function AuthProvider({ children }) {
@@ -281,6 +283,7 @@ export function AuthProvider({ children }) {
       alive = false;
       sub?.subscription?.unsubscribe?.();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => writeStorage(AUTH_USER_KEY, user), [user]);
