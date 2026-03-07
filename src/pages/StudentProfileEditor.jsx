@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useNavigate } from "react-router-dom";
 import {
   fetchStudentEditorData,
   saveStudentProfileStructured,
   uploadStudentFile,
 } from "../services/adminApi";
+import { useAuth } from "../context/AuthContext";
 import "./StudentProfileEditor.css";
 
 const DEFAULT_THEMES = ["Robotics", "Web Developer", "Sports", "Science", "Arts"];
@@ -125,6 +126,8 @@ function normalizeProfileData(studentRow, raw) {
 }
 
 export default function StudentProfileEditor() {
+  const { logout } = useAuth();
+  const navigate = useNavigate();
   const { studentId } = useParams();
   const [student, setStudent] = useState(null);
   const [themes, setThemes] = useState(DEFAULT_THEMES);
@@ -144,6 +147,7 @@ export default function StudentProfileEditor() {
         .toLowerCase()
         .replace(/\s+/g, "-")
         .replace(/[^a-z0-9-]/g, "")) || "",
+  // eslint-disable-next-line react-hooks/exhaustive-deps
     [student?.slug, student?.full_name]
   );
 
@@ -322,6 +326,7 @@ export default function StudentProfileEditor() {
             <span className="spe-chip">Student: {student?.full_name}</span>
             <span className="spe-chip">School: {student?.school_id || "-"}</span>
             <span className="spe-chip"><Link to="/teacher" className="spe-link">Back to Dashboard</Link></span>
+            <button className="ui-btn danger" onClick={async () => { await logout(); navigate("/login"); }} style={{padding: "6px 12px", fontSize: "13px"}}>Logout</button>
             {slug && (
               <span className="spe-chip">
                 Public URL:{" "}

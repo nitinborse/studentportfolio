@@ -3,6 +3,16 @@ import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { createUser, fetchProfilesForSchool, fetchStudentsForSchool } from "../services/adminApi";
 
+const PAGE_SIZE = 10;
+
+function pickTeacherKey(rows) {
+  const keys = ["teacher_id", "assigned_teacher_id", "created_by_teacher_id", "teacher_uuid"];
+  for (const key of keys) {
+    if (rows.some((r) => r && Object.prototype.hasOwnProperty.call(r, key))) return key;
+  }
+  return null;
+}
+
 export default function AdminDashboard() {
   const { profile, logout } = useAuth();
 
@@ -16,6 +26,57 @@ export default function AdminDashboard() {
   const [fieldErrs, setFieldErrs] = useState({});
   const [teachers, setTeachers] = useState([]);
   const [students, setStudents] = useState([]);
+  const [selectedTeacher, setSelectedTeacher] = useState(null);
+  const [teacherQuery, setTeacherQuery] = useState("");
+  const [studentQuery, setStudentQuery] = useState("");
+  const [teacherPage, setTeacherPage] = useState(1);
+  const [studentPage, setStudentPage] = useState(1);
+
+  const teacherKey = useMemo(() => pickTeacherKey(students), [students]);
+
+  const teacherScopedStudents = useMemo(() => {
+    if (!selectedTeacher) return [];
+    if (teacherKey) {
+      const filtered = students.filter(
+        (s) => String(s?.[teacherKey] || "") === String(selectedTeacher.id || "")
+      );
+      if (filtered.length) return filtered;
+    }
+    return students.filter((s) => s.school_id === selectedTeacher.school_id);
+  }, [students, selectedTeacher, teacherKey]);
+
+  const filteredTeachers = useMemo(() => {
+    const q = teacherQuery.trim().toLowerCase();
+    if (!q) return teachers;
+    return teachers.filter(
+      (t) =>
+        String(t.full_name || "").toLowerCase().includes(q) ||
+        String(t.school_id || "").toLowerCase().includes(q)
+    );
+  }, [teachers, teacherQuery]);
+
+  const filteredStudents = useMemo(() => {
+    const q = studentQuery.trim().toLowerCase();
+    if (!q) return teacherScopedStudents;
+    return teacherScopedStudents.filter(
+      (s) =>
+        String(s.full_name || "").toLowerCase().includes(q) ||
+        String(s.class || "").toLowerCase().includes(q) ||
+        String(s.section || "").toLowerCase().includes(q)
+    );
+  }, [teacherScopedStudents, studentQuery]);
+
+  const teacherPages = Math.max(1, Math.ceil(filteredTeachers.length / PAGE_SIZE));
+  const studentPages = Math.max(1, Math.ceil(filteredStudents.length / PAGE_SIZE));
+
+  const pagedTeachers = useMemo(
+    () => filteredTeachers.slice((teacherPage - 1) * PAGE_SIZE, teacherPage * PAGE_SIZE),
+    [filteredTeachers, teacherPage]
+  );
+  const pagedStudents = useMemo(
+    () => filteredStudents.slice((studentPage - 1) * PAGE_SIZE, studentPage * PAGE_SIZE),
+    [filteredStudents, studentPage]
+  );
 
   const origin = useMemo(() => {
     if (typeof window === "undefined") return "";
@@ -108,6 +169,7 @@ export default function AdminDashboard() {
         <div className="ui-chip-row">
           <span className="ui-chip">School Name: {profile?.full_name || "-"}</span>
           <span className="ui-chip">School ID: {profile?.school_id || "-"}</span>
+          <Link to="/admin/hierarchy" className="ui-btn">Hierarchy View</Link>
           <button className="ui-btn danger" onClick={logout}>Logout</button>
         </div>
       </div>

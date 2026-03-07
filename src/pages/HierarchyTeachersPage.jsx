@@ -1,10 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useParams, useSearchParams } from "react-router-dom";
+import { Link, useParams, useSearchParams, useNavigate } from "react-router-dom";
 import { fetchProfilesForSchool } from "../services/adminApi";
+
+import { useAuth } from "../context/AuthContext";
 
 const PAGE_SIZE = 12;
 
 export default function HierarchyTeachersPage() {
+  const { logout } = useAuth();
+  const navigate = useNavigate();
   const { adminId } = useParams();
   const [searchParams] = useSearchParams();
   const schoolId = searchParams.get("schoolId") || "";
@@ -63,6 +67,7 @@ export default function HierarchyTeachersPage() {
           <Link to="/super-admin/hierarchy/admins" className="ui-btn">Back to Admins</Link>
           <span className="ui-chip">School ID: {schoolId || "-"}</span>
           <span className="ui-chip">Total Teachers: {filtered.length}</span>
+          <button className="ui-btn danger" onClick={async () => { await logout(); navigate("/login"); }}>Logout</button>
         </div>
       </div>
 

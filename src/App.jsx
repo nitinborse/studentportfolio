@@ -13,6 +13,9 @@ import SuperAdminUsers from "./pages/SuperAdminUsers";
 import HierarchyAdminsPage from "./pages/HierarchyAdminsPage";
 import HierarchyTeachersPage from "./pages/HierarchyTeachersPage";
 import HierarchyStudentsPage from "./pages/HierarchyStudentsPage";
+import AdminTeachersPage from "./pages/AdminTeachersPage";
+import AdminStudentsPage from "./pages/AdminStudentsPage";
+import TeacherHierarchy from "./pages/TeacherHierarchy";
 import StudentPublicProfile from "./pages/StudentPublicProfile";
 import StudentProfileEditor from "./pages/StudentProfileEditor";
 
@@ -51,10 +54,34 @@ export default function App() {
             }
           />
           <Route
+            path="/admin/hierarchy"
+            element={
+              <ProtectedRoute allow={["admin"]}>
+                <AdminTeachersPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/hierarchy/teacher/:teacherId/students"
+            element={
+              <ProtectedRoute allow={["admin"]}>
+                <AdminStudentsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/teacher"
             element={
               <ProtectedRoute allow={["teacher"]}>
                 <TeacherDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/teacher/hierarchy"
+            element={
+              <ProtectedRoute allow={["teacher"]}>
+                <TeacherHierarchy />
               </ProtectedRoute>
             }
           />

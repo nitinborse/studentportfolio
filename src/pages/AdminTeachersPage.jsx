@@ -1,15 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { fetchProfilesForSchool } from "../services/adminApi";
-
 import { useAuth } from "../context/AuthContext";
+import { fetchProfilesForSchool } from "../services/adminApi";
 
 const PAGE_SIZE = 12;
 
-export default function HierarchyAdminsPage() {
-  const { logout } = useAuth();
+export default function AdminTeachersPage() {
+  const { profile, logout } = useAuth();
   const navigate = useNavigate();
-  const [admins, setAdmins] = useState([]);
+  const [teachers, setTeachers] = useState([]);
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
@@ -21,31 +20,30 @@ export default function HierarchyAdminsPage() {
       setLoading(true);
       setErr("");
       try {
-        const profiles = await fetchProfilesForSchool(null);
+        const profiles = await fetchProfilesForSchool(profile?.school_id || null);
         if (!alive) return;
-        setAdmins((profiles || []).filter((p) => p.role === "admin"));
+        setTeachers((profiles || []).filter((p) => p.role === "teacher"));
       } catch (e) {
         if (!alive) return;
-        setErr(e.message || "Failed to load admins.");
+        setErr(e.message || "Failed to load teachers.");
       } finally {
         if (alive) setLoading(false);
       }
     }
     load();
-    return () => {
-      alive = false;
-    };
+    return () => { alive = false; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return admins;
-    return admins.filter(
-      (a) =>
-        String(a.full_name || "").toLowerCase().includes(q) ||
-        String(a.school_id || "").toLowerCase().includes(q)
+    if (!q) return teachers;
+    return teachers.filter(
+      (t) =>
+        String(t.full_name || "").toLowerCase().includes(q) ||
+        String(t.school_id || "").toLowerCase().includes(q)
     );
-  }, [admins, query]);
+  }, [teachers, query]);
 
   const pages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const paged = useMemo(
@@ -56,28 +54,28 @@ export default function HierarchyAdminsPage() {
   return (
     <div className="ui-page">
       <div className="ui-hero">
-        <h2>Admins</h2>
-        <p>Select an admin to view teachers under that admin.</p>
+        <h2>Teachers</h2>
+        <p>Select a teacher to view their students.</p>
         <div className="ui-chip-row">
-          <Link to="/super-admin" className="ui-btn">Back to Super Admin</Link>
-          <span className="ui-chip">Total Admins: {filtered.length}</span>
+          <Link to="/admin" className="ui-btn">Back to Admin Dashboard</Link>
+          <span className="ui-chip">Total Teachers: {filtered.length}</span>
           <button className="ui-btn danger" onClick={async () => { await logout(); navigate("/login"); }}>Logout</button>
         </div>
       </div>
 
-      {loading && <div className="ui-card"><p>Loading admins...</p></div>}
+      {loading && <div className="ui-card"><p>Loading teachers...</p></div>}
       {!!err && <div className="ui-card"><p className="ui-msg err">{err}</p></div>}
 
       <div className="ui-card">
         <div className="ui-field">
-          <label>Search Admin</label>
+          <label>Search Teacher</label>
           <input
             value={query}
             onChange={(e) => {
               setQuery(e.target.value);
               setPage(1);
             }}
-            placeholder="Search by admin name or school id"
+            placeholder="Search by teacher name"
           />
         </div>
 
@@ -91,18 +89,18 @@ export default function HierarchyAdminsPage() {
               </tr>
             </thead>
             <tbody>
-              {paged.map((a) => {
+              {paged.map((t) => {
                 const params = new URLSearchParams({
-                  schoolId: a.school_id || "",
-                  adminName: a.full_name || "",
+                  teacherName: t.full_name || "",
+                  schoolId: profile?.school_id || "",
                 });
                 return (
-                  <tr key={a.id}>
-                    <td>{a.full_name || "-"}</td>
-                    <td>{a.school_id || "-"}</td>
+                  <tr key={t.id}>
+                    <td>{t.full_name || "-"}</td>
+                    <td>{t.school_id || "-"}</td>
                     <td>
-                      <Link to={`/super-admin/hierarchy/admin/${a.id}/teachers?${params.toString()}`}>
-                        View Teachers
+                      <Link to={`/admin/hierarchy/teacher/${t.id}/students?${params.toString()}`}>
+                        View Students
                       </Link>
                     </td>
                   </tr>
@@ -110,7 +108,7 @@ export default function HierarchyAdminsPage() {
               })}
               {!filtered.length && (
                 <tr>
-                  <td colSpan="3">No admins found.</td>
+                  <td colSpan="3">No teachers found.</td>
                 </tr>
               )}
             </tbody>

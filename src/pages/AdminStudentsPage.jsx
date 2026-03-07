@@ -1,30 +1,25 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams, useSearchParams, useNavigate } from "react-router-dom";
-import { fetchStudentsForHierarchy } from "../services/adminApi";
-
 import { useAuth } from "../context/AuthContext";
+import { fetchStudentsForSchool } from "../services/adminApi";
 
 const PAGE_SIZE = 12;
 
 function pickTeacherKey(rows) {
   const keys = ["teacher_id", "assigned_teacher_id", "created_by_teacher_id", "teacher_uuid"];
   for (const key of keys) {
-    if (rows.some((r) => r && Object.prototype.hasOwnProperty.call(r, key))) {
-      return key;
-    }
+    if (rows.some((r) => r && Object.prototype.hasOwnProperty.call(r, key))) return key;
   }
   return null;
 }
 
-export default function HierarchyStudentsPage() {
+export default function AdminStudentsPage() {
   const { logout } = useAuth();
   const navigate = useNavigate();
   const { teacherId } = useParams();
   const [searchParams] = useSearchParams();
-  const schoolId = searchParams.get("schoolId") || "";
   const teacherName = searchParams.get("teacherName") || "";
-  const adminId = searchParams.get("adminId") || "";
-  const adminName = searchParams.get("adminName") || "";
+  const schoolId = searchParams.get("schoolId") || "";
 
   const [students, setStudents] = useState([]);
   const [query, setQuery] = useState("");
@@ -38,7 +33,7 @@ export default function HierarchyStudentsPage() {
       setLoading(true);
       setErr("");
       try {
-        const rows = await fetchStudentsForHierarchy();
+        const rows = await fetchStudentsForSchool(schoolId || null);
         if (!alive) return;
         setStudents(rows || []);
       } catch (e) {
@@ -49,9 +44,8 @@ export default function HierarchyStudentsPage() {
       }
     }
     load();
-    return () => {
-      alive = false;
-    };
+    return () => { alive = false; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const teacherKey = useMemo(() => pickTeacherKey(students), [students]);
@@ -81,24 +75,13 @@ export default function HierarchyStudentsPage() {
     [filtered, page]
   );
 
-  const backParams = new URLSearchParams({
-    schoolId,
-    adminName,
-  }).toString();
-  const backToTeachers = adminId
-    ? `/super-admin/hierarchy/admin/${adminId}/teachers?${backParams}`
-    : "/super-admin/hierarchy/admins";
-
   return (
     <div className="ui-page">
       <div className="ui-hero">
         <h2>Students</h2>
         <p>Teacher: {teacherName || teacherId}</p>
         <div className="ui-chip-row">
-          <Link to={backToTeachers} className="ui-btn">
-            Back to Teachers
-          </Link>
-          <span className="ui-chip">School ID: {schoolId || "-"}</span>
+          <Link to="/admin/hierarchy" className="ui-btn">Back to Teachers</Link>
           <span className="ui-chip">Total Students: {filtered.length}</span>
           <button className="ui-btn danger" onClick={async () => { await logout(); navigate("/login"); }}>Logout</button>
         </div>
@@ -108,6 +91,11 @@ export default function HierarchyStudentsPage() {
       {!!err && <div className="ui-card"><p className="ui-msg err">{err}</p></div>}
 
       <div className="ui-card">
+        {teacherKey && (
+          <p className="hierarchy-note">
+            Using "{teacherKey}" for teacher assignment filter.
+          </p>
+        )}
         <div className="ui-field">
           <label>Search Student</label>
           <input
