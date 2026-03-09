@@ -8,7 +8,24 @@ import {
 import { useAuth } from "../context/AuthContext";
 import "./StudentProfileEditor.css";
 
-const DEFAULT_THEMES = ["Robotics", "Web Developer", "Sports", "Science", "Arts"];
+const DEFAULT_THEMES = [
+  "Robotics",
+  "Web Developer",
+  "Data Science",
+  "Sports",
+  "Music",
+  "Art & Design",
+  "Photography",
+  "Gaming",
+  "Dance",
+  "Culinary Arts",
+  "Fashion",
+  "Film & Cinema",
+  "Environment",
+  "Space & Astronomy",
+  "Literature",
+  "Business"
+];
 const LIST_LIMITS = {
   coreSkills: 4,
   awards: 20,

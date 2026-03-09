@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { createStudentNoLogin, fetchStudentsForSchool } from "../services/adminApi";
+import { createStudentNoLogin, fetchStudentsForSchool, bulkCreateStudents } from "../services/adminApi";
 
 function slugFromName(name) {
   return (name || "")
@@ -15,9 +15,12 @@ export default function TeacherDashboard() {
   const { profile, logout } = useAuth();
   const [fullName, setFullName] = useState("");
   const [loading, setLoading] = useState(false);
+  const [bulkLoading, setBulkLoading] = useState(false);
   const [students, setStudents] = useState([]);
   const [msg, setMsg] = useState("");
   const [err, setErr] = useState("");
+  const [bulkMsg, setBulkMsg] = useState("");
+  const [bulkErr, setBulkErr] = useState("");
 
   const origin = useMemo(
     () => (typeof window !== "undefined" ? window.location.origin : ""),
@@ -59,6 +62,54 @@ export default function TeacherDashboard() {
       setErr(e2.message || "Failed to create student.");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleBulkUpload(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setBulkMsg("");
+    setBulkErr("");
+    setBulkLoading(true);
+    try {
+      const text = await file.text();
+      const lines = text.split(/\r?\n/).filter(Boolean);
+      if (lines.length < 2) throw new Error("CSV must have header and at least 1 student");
+      
+      const header = lines[0].toLowerCase().split(",").map(h => h.trim());
+      const nameIdx = header.indexOf("name");
+      const classIdx = header.indexOf("class");
+      const sectionIdx = header.indexOf("section");
+      
+      if (nameIdx === -1) throw new Error("CSV must have 'name' column");
+      
+      const students = [];
+      for (let i = 1; i < lines.length; i++) {
+        const cols = lines[i].split(",").map(c => c.trim());
+        const name = cols[nameIdx];
+        if (!name) continue;
+        students.push({
+          full_name: name,
+          class: classIdx !== -1 ? cols[classIdx] : null,
+          section: sectionIdx !== -1 ? cols[sectionIdx] : null
+        });
+      }
+      
+      if (!students.length) throw new Error("No valid students found in CSV");
+      
+      const result = await bulkCreateStudents({
+        students,
+        school_id: profile.school_id,
+        teacher_id: profile.id
+      });
+      
+      setBulkMsg(`Successfully created ${result.length} students`);
+      await loadStudents();
+    } catch (e2) {
+      setBulkErr(e2.message || "Bulk upload failed");
+    } finally {
+      setBulkLoading(false);
+      e.target.value = "";
     }
   }
 
@@ -109,6 +160,24 @@ export default function TeacherDashboard() {
           </form>
           {msg && <p className="ui-msg ok">{msg}</p>}
           {err && <p className="ui-msg err">{err}</p>}
+          
+          <hr style={{ margin: "20px 0", border: "none", borderTop: "1px solid #e2e8f0" }} />
+          
+          <h3>Bulk Upload Students</h3>
+          <p style={{ fontSize: "13px", color: "#64748b", marginBottom: "10px" }}>
+            Upload CSV file with columns: <strong>name</strong> (required), <strong>class</strong> (optional), <strong>section</strong> (optional)
+          </p>
+          <div className="ui-field">
+            <input 
+              type="file" 
+              accept=".csv" 
+              onChange={handleBulkUpload}
+              disabled={bulkLoading}
+            />
+          </div>
+          {bulkLoading && <p style={{ color: "#3b82f6" }}>Uploading students...</p>}
+          {bulkMsg && <p className="ui-msg ok">{bulkMsg}</p>}
+          {bulkErr && <p className="ui-msg err">{bulkErr}</p>}
         </div>
 
         <div className="ui-card">

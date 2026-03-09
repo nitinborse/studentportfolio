@@ -41,6 +41,25 @@ export async function createUser({ email, password, full_name, role, school_id }
   return data;
 }
 
+export async function bulkCreateStudents({ students, school_id, teacher_id }) {
+  const rows = students.map(s => ({
+    full_name: s.full_name,
+    school_id,
+    teacher_id,
+    slug: slugFromName(s.full_name),
+    class: s.class || null,
+    section: s.section || null
+  }));
+  
+  const { data, error } = await supabase
+    .from("students")
+    .insert(rows)
+    .select("id, full_name, school_id, slug, class, section, created_at");
+  
+  if (error) throw error;
+  return data || [];
+}
+
 function slugFromName(name) {
   return (name || "")
     .trim()
