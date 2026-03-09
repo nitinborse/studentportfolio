@@ -166,7 +166,10 @@ export async function fetchStudentBySlug(studentSlug) {
     .eq("slug", normalizedSlug)
     .maybeSingle();
 
-  if (bySlug.error) throw bySlug.error;
+  if (bySlug.error) {
+    console.error('Error fetching by slug:', bySlug.error);
+    return null;
+  }
   if (bySlug.data) return bySlug.data;
 
   const { data, error } = await supabase
@@ -177,7 +180,10 @@ export async function fetchStudentBySlug(studentSlug) {
     .limit(1)
     .maybeSingle();
 
-  if (error) throw error;
+  if (error) {
+    console.error('Error fetching by name:', error);
+    return null;
+  }
   return data || null;
 }
 
@@ -232,7 +238,10 @@ export async function fetchStudentProfileByStudentId(studentId) {
     .eq("student_id", studentId)
     .maybeSingle();
 
-  if (error) throw error;
+  if (error) {
+    console.error('Error fetching student profile:', error);
+    return null;
+  }
   return data || null;
 }
 
@@ -378,8 +387,20 @@ export async function uploadStudentFile({ bucket, studentId, file, folder = "upl
 }
 
 export async function saveStudentProfileStructured(studentId, rawProfile) {
+  const profile = rawProfile || {};
+  const fullName = [profile.firstName, profile.middleName, profile.lastName].filter(Boolean).join(" ").trim();
+  const newSlug = slugFromName(fullName) || "student";
+  
+  if (fullName) {
+    const { error } = await supabase
+      .from("students")
+      .update({ full_name: fullName, slug: newSlug })
+      .eq("id", studentId);
+    if (error) throw error;
+  }
+  
   const shadow = await upsertStudentProfile(studentId, rawProfile);
-  return { profile: shadow };
+  return { profile: shadow, student: { slug: newSlug } };
 }
 
 export async function upsertStudentProfile(studentId, profileData) {
@@ -402,8 +423,17 @@ export async function upsertStudentProfile(studentId, profileData) {
 export async function fetchPublicStudentProfileBySlug(studentSlug) {
   const student = await fetchStudentBySlug(studentSlug);
   if (!student) return null;
-  const [profile, portfolio, achievements, media, results, testimonials, themes] = await Promise.all([
-    fetchStudentProfileByStudentId(student.id),
+  const profile = await fetchStudentProfileByStudentId(student.id);
+  
+  if (profile?.profile_data) {
+    return {
+      student,
+      profile_data: profile.profile_data,
+      updated_at: profile.updated_at,
+    };
+  }
+  
+  const [portfolio, achievements, media, results, testimonials, themes] = await Promise.all([
     fetchPortfolioByStudentId(student.id),
     fetchAchievementsByStudentId(student.id),
     fetchMediaByStudentId(student.id),
@@ -421,20 +451,19 @@ export async function fetchPublicStudentProfileBySlug(studentSlug) {
   return {
     student,
     profile_data: {
-      ...(profile?.profile_data || {}),
-      theme: (profile?.profile_data || {}).theme || themeName || "",
-      className: (profile?.profile_data || {}).className || student.class || "",
-      section: (profile?.profile_data || {}).section || student.section || "",
-      classroomImages: (profile?.profile_data || {}).classroomImages || media.filter((m) => m.type === "image" && m.category === "classroom").map((m) => m.url),
-      personalImages: (profile?.profile_data || {}).personalImages || media.filter((m) => m.type === "image" && m.category === "personal").map((m) => m.url),
-      videoGallery: (profile?.profile_data || {}).videoGallery || media.filter((m) => m.type === "video").map((m) => m.url),
-      awards: (profile?.profile_data || {}).awards || achievements.filter((a) => a.description === "award").map((a) => a.title),
-      certificates: (profile?.profile_data || {}).certificates || achievements.filter((a) => a.description !== "award").map((a) => a.title),
-      coreSkills: (profile?.profile_data || {}).coreSkills || coreSkills,
-      resultsLast4: (profile?.profile_data || {}).resultsLast4 || media.filter((m) => m.type === "video" && m.category === "results").map((m) => m.url),
-      testimonials: (profile?.profile_data || {}).testimonials || testimonials.map((t) => t.message),
-      testimonial: (profile?.profile_data || {}).testimonial || testimonials[0]?.message || "",
+      theme: themeName || "",
+      className: student.class || "",
+      section: student.section || "",
+      classroomImages: media.filter((m) => m.type === "image" && m.category === "classroom").map((m) => m.url),
+      personalImages: media.filter((m) => m.type === "image" && m.category === "personal").map((m) => m.url),
+      videoGallery: media.filter((m) => m.type === "video" && m.category === "gallery").map((m) => m.url),
+      awards: achievements.filter((a) => a.description === "award").map((a) => a.title),
+      certificates: achievements.filter((a) => a.description !== "award").map((a) => a.title),
+      coreSkills: coreSkills,
+      resultsLast4: media.filter((m) => m.type === "video" && m.category === "results").map((m) => m.url),
+      testimonials: testimonials.map((t) => t.message),
+      testimonial: testimonials[0]?.message || "",
     },
-    updated_at: profile?.updated_at || null,
+    updated_at: null,
   };
 }
