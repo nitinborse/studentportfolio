@@ -101,6 +101,16 @@ function listToLines(list) {
   return (list || []).join("\n");
 }
 
+function convertToEmbedUrl(url) {
+  if (!url) return url;
+  const youtubeRegex = /(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\s]+)/;
+  const match = url.match(youtubeRegex);
+  if (match) {
+    return `https://www.youtube.com/embed/${match[1]}`;
+  }
+  return url;
+}
+
 function splitFullName(fullName) {
   const parts = (fullName || "").trim().split(/\s+/).filter(Boolean);
   if (!parts.length) return { firstName: "", middleName: "", lastName: "" };
@@ -151,6 +161,9 @@ export default function StudentProfileEditor() {
   const [profile, setProfile] = useState(EMPTY_PROFILE);
   const [listInputs, setListInputs] = useState(buildListInputState(EMPTY_PROFILE));
   const [testimonialsInput, setTestimonialsInput] = useState("");
+  const [previewImages, setPreviewImages] = useState({ profilePhoto: "", classroomImages: [], personalImages: [] });
+  const [previewVideos, setPreviewVideos] = useState([]);
+  const [previewResults, setPreviewResults] = useState([]);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -239,6 +252,13 @@ export default function StudentProfileEditor() {
         setProfile(finalProfile);
         setListInputs(buildListInputState(finalProfile));
         setTestimonialsInput(listToLines(testimonialList));
+        setPreviewImages({
+          profilePhoto: finalProfile.profilePhoto || "",
+          classroomImages: finalProfile.classroomImages || [],
+          personalImages: finalProfile.personalImages || []
+        });
+        setPreviewVideos(finalProfile.videoGallery || []);
+        setPreviewResults(finalProfile.resultsLast4 || []);
       } catch (e) {
         if (!alive) return;
         setErr(e.message || "Failed to load student profile editor.");
@@ -282,7 +302,7 @@ export default function StudentProfileEditor() {
       const uploaded = [];
       for (const file of selected) {
         const res = await uploadStudentFile({
-          bucket,
+          bucket: bucket === "results" ? "student-photos" : bucket,
           studentId,
           file,
           folder: fieldKey,
@@ -293,6 +313,17 @@ export default function StudentProfileEditor() {
       setField(fieldKey, max === 1 ? (merged[0] || "") : merged);
       if (max > 1 && LIST_LIMITS[fieldKey]) {
         setListFieldText(fieldKey, listToComma(merged));
+      }
+      if (fieldKey === "profilePhoto") {
+        setPreviewImages(prev => ({ ...prev, profilePhoto: merged[0] || "" }));
+      } else if (fieldKey === "classroomImages") {
+        setPreviewImages(prev => ({ ...prev, classroomImages: merged }));
+      } else if (fieldKey === "personalImages") {
+        setPreviewImages(prev => ({ ...prev, personalImages: merged }));
+      } else if (fieldKey === "videoGallery") {
+        setPreviewVideos(merged);
+      } else if (fieldKey === "resultsLast4") {
+        setPreviewResults(merged);
       }
     } catch (e) {
       setErr(e.message || "Upload failed.");
@@ -309,14 +340,14 @@ export default function StudentProfileEditor() {
     try {
       const clean = {
         ...profile,
-        coreSkills: commaToList(listInputs.coreSkills, 4),
-        awards: commaToList(listInputs.awards, 20),
-        certificates: commaToList(listInputs.certificates, 20),
-        classroomImages: commaToList(listInputs.classroomImages, 5),
-        personalImages: commaToList(listInputs.personalImages, 5),
-        videoGallery: commaToList(listInputs.videoGallery, 5),
-        resultsLast4: commaToList(listInputs.resultsLast4, 4),
-        testimonials: newlineToList(testimonialsInput, 20),
+        coreSkills: (profile.coreSkills || []).filter(Boolean),
+        awards: (profile.awards || []).filter(Boolean),
+        certificates: (profile.certificates || []).filter(Boolean),
+        classroomImages: (profile.classroomImages || []).filter(Boolean),
+        personalImages: (profile.personalImages || []).filter(Boolean),
+        videoGallery: (profile.videoGallery || []).filter(Boolean),
+        resultsLast4: (profile.resultsLast4 || []).filter(Boolean),
+        testimonials: (profile.testimonials || []).filter(Boolean),
       };
       clean.testimonial = clean.testimonials[0] || "";
       setProfile((prev) => ({ ...prev, ...clean }));
@@ -369,9 +400,8 @@ export default function StudentProfileEditor() {
           </div>
         </div>
 
-        <form onSubmit={handleSave} className="spe-layout">
+        <form onSubmit={handleSave} className="spe-form">
           <div className="spe-card">
-            <h3>Basic Details</h3>
             <div className="spe-field">
               <label>Theme</label>
               <select value={profile.theme || ""} onChange={(e) => setField("theme", e.target.value)}>
@@ -381,28 +411,42 @@ export default function StudentProfileEditor() {
                 ))}
               </select>
             </div>
-            <div className="spe-field" style={{ marginTop: 10 }}>
-              <label>Profile Picture URL</label>
-              <input value={profile.profilePhoto || ""} onChange={(e) => setField("profilePhoto", e.target.value)} />
-              <div className="spe-upload">
-                <input type="file" accept="image/*" onChange={(e) => handleUpload("student-photos", e.target.files, "profilePhoto", 1)} />
+
+            <div className="spe-profile-section">
+              <div className="spe-field">
+                <label>Profile Picture</label>
+                {!previewImages.profilePhoto ? (
+                  <>
+                    <input value={profile.profilePhoto || ""} onChange={(e) => { setField("profilePhoto", e.target.value); setPreviewImages(prev => ({ ...prev, profilePhoto: e.target.value })); }} placeholder="Enter image URL" />
+                    <div className="spe-upload">
+                      <input type="file" accept="image/*" onChange={(e) => handleUpload("student-photos", e.target.files, "profilePhoto", 1)} />
+                    </div>
+                  </>
+                ) : (
+                  <div className="spe-profile-preview">
+                    <img src={previewImages.profilePhoto} alt="Profile" onError={(e) => e.target.style.display = 'none'} />
+                    <button type="button" className="spe-media-remove" onClick={() => { setField("profilePhoto", ""); setPreviewImages(prev => ({ ...prev, profilePhoto: "" })); }}>×</button>
+                  </div>
+                )}
+              </div>
+
+              <div className="spe-name-fields">
+                <div className="spe-field">
+                  <label>First Name</label>
+                  <input value={profile.firstName || ""} onChange={(e) => setField("firstName", e.target.value)} />
+                </div>
+                <div className="spe-field">
+                  <label>Middle Name</label>
+                  <input value={profile.middleName || ""} onChange={(e) => setField("middleName", e.target.value)} />
+                </div>
+                <div className="spe-field">
+                  <label>Last Name</label>
+                  <input value={profile.lastName || ""} onChange={(e) => setField("lastName", e.target.value)} />
+                </div>
               </div>
             </div>
-            <div className="spe-grid-3" style={{ marginTop: 10 }}>
-              <div className="spe-field">
-                <label>First Name</label>
-                <input value={profile.firstName || ""} onChange={(e) => setField("firstName", e.target.value)} />
-              </div>
-              <div className="spe-field">
-                <label>Middle Name</label>
-                <input value={profile.middleName || ""} onChange={(e) => setField("middleName", e.target.value)} />
-              </div>
-              <div className="spe-field">
-                <label>Last Name</label>
-                <input value={profile.lastName || ""} onChange={(e) => setField("lastName", e.target.value)} />
-              </div>
-            </div>
-            <div className="spe-grid-2" style={{ marginTop: 10 }}>
+
+            <div className="spe-row">
               <div className="spe-field">
                 <label>Class</label>
                 <input value={profile.className || ""} onChange={(e) => setField("className", e.target.value)} />
@@ -412,19 +456,27 @@ export default function StudentProfileEditor() {
                 <input value={profile.section || ""} onChange={(e) => setField("section", e.target.value)} />
               </div>
             </div>
-            <div className="spe-field" style={{ marginTop: 10 }}>
-              <label>Core Skills (max 4, comma separated)</label>
-              <input
-                value={listInputs.coreSkills}
-                onChange={(e) => setListFieldText("coreSkills", e.target.value)}
-                onBlur={() => commitListField("coreSkills")}
-              />
-            </div>
-          </div>
 
-          <div className="spe-card">
-            <h3>Contact & Address</h3>
-            <div className="spe-grid-3">
+            <div className="spe-field">
+              <label>Core Skills (max 4)</label>
+              <div className="spe-grid-2x2">
+                {(profile.coreSkills || []).map((skill, i) => (
+                  <div key={i} className="spe-list-item">
+                    <input value={skill} onChange={(e) => {
+                      const updated = [...profile.coreSkills];
+                      updated[i] = e.target.value;
+                      setField("coreSkills", updated);
+                    }} placeholder={`Skill ${i + 1}`} />
+                    <button type="button" className="spe-remove" onClick={() => setField("coreSkills", profile.coreSkills.filter((_, idx) => idx !== i))}>×</button>
+                  </div>
+                ))}
+              </div>
+              {(profile.coreSkills?.length || 0) < 4 && (
+                <button type="button" className="spe-add" onClick={() => setField("coreSkills", [...(profile.coreSkills || []), ""])}>+ Add Skill</button>
+              )}
+            </div>
+
+            <div className="spe-row">
               <div className="spe-field">
                 <label>Mobile</label>
                 <input value={profile.mobile || ""} onChange={(e) => setField("mobile", e.target.value)} />
@@ -438,93 +490,229 @@ export default function StudentProfileEditor() {
                 <input value={profile.schoolName || ""} onChange={(e) => setField("schoolName", e.target.value)} />
               </div>
             </div>
-            <div className="spe-field" style={{ marginTop: 10 }}>
+
+            <div className="spe-field">
               <label>Location</label>
               <input value={profile.location || ""} onChange={(e) => setField("location", e.target.value)} />
             </div>
-            <div className="spe-field" style={{ marginTop: 10 }}>
+
+            <div className="spe-field">
               <label>Home Address</label>
               <textarea value={profile.homeAddress || ""} onChange={(e) => setField("homeAddress", e.target.value)} rows={3} />
             </div>
-          </div>
 
-          <div className="spe-card">
-            <h3>Achievements</h3>
             <div className="spe-field">
-              <label>Awards (comma separated)</label>
-              <textarea
-                value={listInputs.awards}
-                onChange={(e) => setListFieldText("awards", e.target.value)}
-                onBlur={() => commitListField("awards")}
-                rows={3}
-              />
+              <label>Awards (max 20)</label>
+              <div className="spe-grid-2x2">
+                {(profile.awards || []).map((award, i) => (
+                  <div key={i} className="spe-list-item">
+                    <input value={award} onChange={(e) => {
+                      const updated = [...profile.awards];
+                      updated[i] = e.target.value;
+                      setField("awards", updated);
+                    }} placeholder={`Award ${i + 1}`} />
+                    <button type="button" className="spe-remove" onClick={() => setField("awards", profile.awards.filter((_, idx) => idx !== i))}>×</button>
+                  </div>
+                ))}
+              </div>
+              {(profile.awards?.length || 0) < 20 && (
+                <button type="button" className="spe-add" onClick={() => setField("awards", [...(profile.awards || []), ""])}>+ Add Award</button>
+              )}
             </div>
-            <div className="spe-field" style={{ marginTop: 10 }}>
-              <label>Certificates (comma separated)</label>
-              <textarea
-                value={listInputs.certificates}
-                onChange={(e) => setListFieldText("certificates", e.target.value)}
-                onBlur={() => commitListField("certificates")}
-                rows={3}
-              />
-            </div>
-            <div className="spe-field" style={{ marginTop: 10 }}>
-              <label>Results Last 4 (comma separated)</label>
-              <textarea
-                value={listInputs.resultsLast4}
-                onChange={(e) => setListFieldText("resultsLast4", e.target.value)}
-                onBlur={() => commitListField("resultsLast4")}
-                rows={2}
-              />
-            </div>
-            <div className="spe-field" style={{ marginTop: 10 }}>
-              <label>Testimonials (one per line)</label>
-              <textarea
-                value={testimonialsInput}
-                onChange={(e) => setTestimonialsInput(e.target.value)}
-                onBlur={() => setTestimonialsInput(listToLines(newlineToList(testimonialsInput, 20)))}
-                rows={4}
-              />
-            </div>
-          </div>
 
-          <div className="spe-card">
-            <h3>Media Gallery</h3>
             <div className="spe-field">
-              <label>Classroom Images URLs (max 5)</label>
-              <textarea
-                value={listInputs.classroomImages}
-                onChange={(e) => setListFieldText("classroomImages", e.target.value)}
-                onBlur={() => commitListField("classroomImages")}
-                rows={2}
-              />
-              <div className="spe-upload">
-                <input type="file" accept="image/*" multiple onChange={(e) => handleUpload("galleries", e.target.files, "classroomImages", 5)} />
+              <label>Certificates (max 20)</label>
+              <div className="spe-grid-2x2">
+                {(profile.certificates || []).map((cert, i) => (
+                  <div key={i} className="spe-list-item">
+                    <input value={cert} onChange={(e) => {
+                      const updated = [...profile.certificates];
+                      updated[i] = e.target.value;
+                      setField("certificates", updated);
+                    }} placeholder={`Certificate ${i + 1}`} />
+                    <button type="button" className="spe-remove" onClick={() => setField("certificates", profile.certificates.filter((_, idx) => idx !== i))}>×</button>
+                  </div>
+                ))}
               </div>
+              {(profile.certificates?.length || 0) < 20 && (
+                <button type="button" className="spe-add" onClick={() => setField("certificates", [...(profile.certificates || []), ""])}>+ Add Certificate</button>
+              )}
             </div>
-            <div className="spe-field" style={{ marginTop: 10 }}>
-              <label>Personal Images URLs (max 5)</label>
-              <textarea
-                value={listInputs.personalImages}
-                onChange={(e) => setListFieldText("personalImages", e.target.value)}
-                onBlur={() => commitListField("personalImages")}
-                rows={2}
-              />
-              <div className="spe-upload">
-                <input type="file" accept="image/*" multiple onChange={(e) => handleUpload("student-photos", e.target.files, "personalImages", 5)} />
+
+            <div className="spe-field">
+              <label>Results Last 4 (PDF)</label>
+              <div className="spe-media-grid">
+                {(previewResults || []).map((pdf, i) => (
+                  <div key={i} className="spe-media-preview">
+                    <iframe src={pdf} frameBorder="0" title={`Result ${i + 1}`} />
+                    <button type="button" className="spe-media-remove" onClick={() => {
+                      const updated = profile.resultsLast4.filter((_, idx) => idx !== i);
+                      setField("resultsLast4", updated);
+                      setPreviewResults(updated);
+                    }}>×</button>
+                  </div>
+                ))}
               </div>
+              {(profile.resultsLast4?.length || 0) < 4 && (
+                <>
+                  <input value="" onChange={(e) => {
+                    if (e.target.value) {
+                      const updated = [...(profile.resultsLast4 || []), e.target.value];
+                      setField("resultsLast4", updated);
+                      setPreviewResults(updated);
+                      e.target.value = "";
+                    }
+                  }} placeholder="Enter PDF URL and press Enter" onKeyDown={(e) => {
+                    if (e.key === 'Enter' && e.target.value) {
+                      const updated = [...(profile.resultsLast4 || []), e.target.value];
+                      setField("resultsLast4", updated);
+                      setPreviewResults(updated);
+                      e.target.value = "";
+                    }
+                  }} />
+                  <div className="spe-upload">
+                    <input type="file" accept=".pdf" multiple onChange={(e) => handleUpload("results", e.target.files, "resultsLast4", 4)} />
+                  </div>
+                </>
+              )}
             </div>
-            <div className="spe-field" style={{ marginTop: 10 }}>
-              <label>Video Gallery URLs (max 5)</label>
-              <textarea
-                value={listInputs.videoGallery}
-                onChange={(e) => setListFieldText("videoGallery", e.target.value)}
-                onBlur={() => commitListField("videoGallery")}
-                rows={2}
-              />
-              <div className="spe-upload">
-                <input type="file" accept="video/*" multiple onChange={(e) => handleUpload("videos", e.target.files, "videoGallery", 5)} />
+
+            <div className="spe-field">
+              <label>Testimonials (max 20)</label>
+              <div className="spe-grid-2x2">
+                {(profile.testimonials || []).map((test, i) => (
+                  <div key={i} className="spe-list-item">
+                    <textarea value={test} onChange={(e) => {
+                      const updated = [...profile.testimonials];
+                      updated[i] = e.target.value;
+                      setField("testimonials", updated);
+                      if (i === 0) setField("testimonial", e.target.value);
+                    }} placeholder={`Testimonial ${i + 1}`} rows={2} />
+                    <button type="button" className="spe-remove" onClick={() => {
+                      const updated = profile.testimonials.filter((_, idx) => idx !== i);
+                      setField("testimonials", updated);
+                      if (i === 0) setField("testimonial", updated[0] || "");
+                    }}>×</button>
+                  </div>
+                ))}
               </div>
+              {(profile.testimonials?.length || 0) < 20 && (
+                <button type="button" className="spe-add" onClick={() => setField("testimonials", [...(profile.testimonials || []), ""])}>+ Add Testimonial</button>
+              )}
+            </div>
+
+            <div className="spe-field">
+              <label>Classroom Images (max 5)</label>
+              <div className="spe-media-grid">
+                {(previewImages.classroomImages || []).map((img, i) => (
+                  <div key={i} className="spe-media-preview">
+                    <img src={img} alt={`Classroom ${i + 1}`} onError={(e) => e.target.style.display = 'none'} />
+                    <button type="button" className="spe-media-remove" onClick={() => {
+                      const updated = profile.classroomImages.filter((_, idx) => idx !== i);
+                      setField("classroomImages", updated);
+                      setPreviewImages(prev => ({ ...prev, classroomImages: updated }));
+                    }}>×</button>
+                  </div>
+                ))}
+              </div>
+              {(profile.classroomImages?.length || 0) < 5 && (
+                <>
+                  <input value="" onChange={(e) => {
+                    if (e.target.value) {
+                      const updated = [...(profile.classroomImages || []), e.target.value];
+                      setField("classroomImages", updated);
+                      setPreviewImages(prev => ({ ...prev, classroomImages: updated }));
+                      e.target.value = "";
+                    }
+                  }} placeholder="Enter image URL and press Enter" onKeyDown={(e) => {
+                    if (e.key === 'Enter' && e.target.value) {
+                      const updated = [...(profile.classroomImages || []), e.target.value];
+                      setField("classroomImages", updated);
+                      setPreviewImages(prev => ({ ...prev, classroomImages: updated }));
+                      e.target.value = "";
+                    }
+                  }} />
+                  <div className="spe-upload">
+                    <input type="file" accept="image/*" multiple onChange={(e) => handleUpload("galleries", e.target.files, "classroomImages", 5)} />
+                  </div>
+                </>
+              )}
+            </div>
+
+            <div className="spe-field">
+              <label>Personal Images (max 5)</label>
+              <div className="spe-media-grid">
+                {(previewImages.personalImages || []).map((img, i) => (
+                  <div key={i} className="spe-media-preview">
+                    <img src={img} alt={`Personal ${i + 1}`} onError={(e) => e.target.style.display = 'none'} />
+                    <button type="button" className="spe-media-remove" onClick={() => {
+                      const updated = profile.personalImages.filter((_, idx) => idx !== i);
+                      setField("personalImages", updated);
+                      setPreviewImages(prev => ({ ...prev, personalImages: updated }));
+                    }}>×</button>
+                  </div>
+                ))}
+              </div>
+              {(profile.personalImages?.length || 0) < 5 && (
+                <>
+                  <input value="" onChange={(e) => {
+                    if (e.target.value) {
+                      const updated = [...(profile.personalImages || []), e.target.value];
+                      setField("personalImages", updated);
+                      setPreviewImages(prev => ({ ...prev, personalImages: updated }));
+                      e.target.value = "";
+                    }
+                  }} placeholder="Enter image URL and press Enter" onKeyDown={(e) => {
+                    if (e.key === 'Enter' && e.target.value) {
+                      const updated = [...(profile.personalImages || []), e.target.value];
+                      setField("personalImages", updated);
+                      setPreviewImages(prev => ({ ...prev, personalImages: updated }));
+                      e.target.value = "";
+                    }
+                  }} />
+                  <div className="spe-upload">
+                    <input type="file" accept="image/*" multiple onChange={(e) => handleUpload("student-photos", e.target.files, "personalImages", 5)} />
+                  </div>
+                </>
+              )}
+            </div>
+
+            <div className="spe-field">
+              <label>Video Gallery (max 5)</label>
+              <div className="spe-media-grid">
+                {(previewVideos || []).map((vid, i) => (
+                  <div key={i} className="spe-media-preview">
+                    <iframe src={convertToEmbedUrl(vid)} frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
+                    <button type="button" className="spe-media-remove" onClick={() => {
+                      const updated = profile.videoGallery.filter((_, idx) => idx !== i);
+                      setField("videoGallery", updated);
+                      setPreviewVideos(updated);
+                    }}>×</button>
+                  </div>
+                ))}
+              </div>
+              {(profile.videoGallery?.length || 0) < 5 && (
+                <>
+                  <input value="" onChange={(e) => {
+                    if (e.target.value) {
+                      const updated = [...(profile.videoGallery || []), e.target.value];
+                      setField("videoGallery", updated);
+                      setPreviewVideos(updated);
+                      e.target.value = "";
+                    }
+                  }} placeholder="Enter YouTube or video URL and press Enter" onKeyDown={(e) => {
+                    if (e.key === 'Enter' && e.target.value) {
+                      const updated = [...(profile.videoGallery || []), e.target.value];
+                      setField("videoGallery", updated);
+                      setPreviewVideos(updated);
+                      e.target.value = "";
+                    }
+                  }} />
+                  <div className="spe-upload">
+                    <input type="file" accept="video/*" multiple onChange={(e) => handleUpload("videos", e.target.files, "videoGallery", 5)} />
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </form>

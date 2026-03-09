@@ -290,7 +290,12 @@ h2::after {
 .datascience-theme .gallery-tile { border: 2px solid rgba(224, 176, 255, 0.4); }
 .sports-theme .gallery-tile { border: 2px solid rgba(184, 77, 77, 0.4); }
 .gaming-theme .gallery-tile { border: 2px solid rgba(57, 255, 20, 0.4); }
-.gallery-tile video { width: 100%; height: 100%; object-fit: cover; }
+.gallery-tile video,
+.gallery-tile iframe {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
 
 .results-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; }
 .result-card {

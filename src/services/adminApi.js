@@ -57,7 +57,39 @@ export async function bulkCreateStudents({ students, school_id, teacher_id }) {
     .select("id, full_name, school_id, slug, class, section, created_at");
   
   if (error) throw error;
-  return data || [];
+  
+  const created = data || [];
+  for (let i = 0; i < created.length; i++) {
+    const student = created[i];
+    const profile = students[i];
+    if (!profile) continue;
+    
+    const profileData = {
+      theme: profile.theme || "",
+      firstName: profile.firstName || "",
+      middleName: profile.middleName || "",
+      lastName: profile.lastName || "",
+      className: profile.class || "",
+      section: profile.section || "",
+      coreSkills: profile.coreSkills ? profile.coreSkills.split(";").map(s => s.trim()).filter(Boolean) : [],
+      location: profile.location || "",
+      homeAddress: profile.homeAddress || "",
+      awards: profile.awards ? profile.awards.split(";").map(s => s.trim()).filter(Boolean) : [],
+      certificates: profile.certificates ? profile.certificates.split(";").map(s => s.trim()).filter(Boolean) : [],
+      mobile: profile.mobile || "",
+      email: profile.email || "",
+      schoolName: profile.schoolName || "",
+      testimonials: profile.testimonials ? profile.testimonials.split(";").map(s => s.trim()).filter(Boolean) : [],
+      classroomImages: [],
+      personalImages: [],
+      videoGallery: [],
+      resultsLast4: []
+    };
+    
+    await upsertStudentProfile(student.id, profileData);
+  }
+  
+  return created;
 }
 
 function slugFromName(name) {
@@ -346,100 +378,8 @@ export async function uploadStudentFile({ bucket, studentId, file, folder = "upl
 }
 
 export async function saveStudentProfileStructured(studentId, rawProfile) {
-  const profile = rawProfile || {};
-  const fullName = [profile.firstName, profile.middleName, profile.lastName].filter(Boolean).join(" ").trim();
-  const newSlug = [profile.firstName, profile.middleName, profile.lastName]
-    .filter(Boolean)
-    .join("-")
-    .toLowerCase()
-    .replace(/[^a-z0-9-]/g, "") || "student";
-  
-  const themeName = String(profile.theme || "").trim();
-  let themeId = null;
-  if (themeName) {
-    const t = await supabase.from("themes").select("id").eq("name", themeName).maybeSingle();
-    if (!t.error && t.data?.id) themeId = t.data.id;
-  }
-
-  const studentPatch = {
-    full_name: fullName || undefined,
-    slug: newSlug,
-    class: profile.className || null,
-    section: profile.section || null,
-    profile_photo:
-      String(profile.profilePhoto || "").trim() ||
-      uniqueStrings(profile.personalImages || profile.classroomImages, 1)[0] ||
-      null,
-  };
-  const upStudent = await supabase
-    .from("students")
-    .update(studentPatch)
-    .eq("id", studentId)
-    .select("id, full_name, slug, school_id, class, section, profile_photo")
-    .single();
-  if (upStudent.error) throw upStudent.error;
-
-  const portfolioPayload = {
-    student_id: studentId,
-    core_skills: uniqueStrings(profile.coreSkills, 4).join(", "),
-    academic_summary: [profile.location, profile.homeAddress].filter(Boolean).join(" | "),
-    theme_id: themeId,
-  };
-  const existingPortfolio = await supabase
-    .from("portfolios")
-    .select("id")
-    .eq("student_id", studentId)
-    .maybeSingle();
-  if (existingPortfolio.error) throw existingPortfolio.error;
-
-  if (existingPortfolio.data?.id) {
-    const updatePortfolio = await supabase
-      .from("portfolios")
-      .update({
-        core_skills: portfolioPayload.core_skills,
-        academic_summary: portfolioPayload.academic_summary,
-        theme_id: portfolioPayload.theme_id,
-      })
-      .eq("id", existingPortfolio.data.id);
-    if (updatePortfolio.error) throw updatePortfolio.error;
-  } else {
-    const insertPortfolio = await supabase.from("portfolios").insert(portfolioPayload);
-    if (insertPortfolio.error) throw insertPortfolio.error;
-  }
-
-  const awards = uniqueStrings(profile.awards, 20);
-  const certs = uniqueStrings(profile.certificates, 20);
-  const achievementRows = awards.map((a) => ({ student_id: studentId, title: a, description: "award", certificate_url: null }));
-  const certRows = certs.map((c) => ({ student_id: studentId, title: c, description: "certificate", certificate_url: c.startsWith("http") ? c : null }));
-  await replaceRows("achievements", studentId, [...achievementRows, ...certRows]);
-
-  await replaceMedia(studentId, "classroom", "image", profile.classroomImages || []);
-  await replaceMedia(studentId, "personal", "image", profile.personalImages || []);
-  await replaceMedia(studentId, "gallery", "video", profile.videoGallery || []);
-
-  const resultsRows = uniqueStrings(profile.resultsLast4, 4).map((v, i) => {
-    const parsed = parseResultEntry(v, i);
-    parsed.student_id = studentId;
-    return parsed;
-  });
-  await replaceRows("results", studentId, resultsRows);
-
-  const testimonialValues = toLineList(
-    profile.testimonials?.length ? profile.testimonials : profile.testimonial,
-    20
-  );
-  const testimonialRows = testimonialValues.map((message) => ({
-    student_id: studentId,
-    author_name: "Teacher",
-    message,
-  }));
-  await replaceRows("testimonials", studentId, testimonialRows);
-
-  const shadow = await upsertStudentProfile(studentId, profile);
-  return {
-    student: upStudent.data,
-    profile: shadow,
-  };
+  const shadow = await upsertStudentProfile(studentId, rawProfile);
+  return { profile: shadow };
 }
 
 export async function upsertStudentProfile(studentId, profileData) {
@@ -491,7 +431,7 @@ export async function fetchPublicStudentProfileBySlug(studentSlug) {
       awards: (profile?.profile_data || {}).awards || achievements.filter((a) => a.description === "award").map((a) => a.title),
       certificates: (profile?.profile_data || {}).certificates || achievements.filter((a) => a.description !== "award").map((a) => a.title),
       coreSkills: (profile?.profile_data || {}).coreSkills || coreSkills,
-      resultsLast4: (profile?.profile_data || {}).resultsLast4 || results.map((r) => r.grade || `${r.marks ?? ""}%`).slice(0, 4),
+      resultsLast4: (profile?.profile_data || {}).resultsLast4 || media.filter((m) => m.type === "video" && m.category === "results").map((m) => m.url),
       testimonials: (profile?.profile_data || {}).testimonials || testimonials.map((t) => t.message),
       testimonial: (profile?.profile_data || {}).testimonial || testimonials[0]?.message || "",
     },

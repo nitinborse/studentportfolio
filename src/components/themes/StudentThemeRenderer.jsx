@@ -5,21 +5,23 @@ function toList(v) {
   return Array.isArray(v) ? v.filter(Boolean) : [];
 }
 
+function convertToEmbedUrl(url) {
+  if (!url) return url;
+  const youtubeRegex = /(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\s]+)/;
+  const match = url.match(youtubeRegex);
+  if (match) {
+    return `https://www.youtube.com/embed/${match[1]}`;
+  }
+  return url;
+}
+
 function fullName(student, p) {
   const n = [p.firstName, p.middleName, p.lastName].filter(Boolean).join(" ").trim();
   return n || student.full_name || "Student";
 }
 
 function parseResults(values) {
-  return toList(values).slice(0, 4).map((item, i) => {
-    const raw = String(item);
-    const yearMatch = raw.match(/\b(20\d{2})\b/);
-    const percentMatch = raw.match(/(\d{1,3})\s*%/);
-    return {
-      year: yearMatch ? yearMatch[1] : `Year ${i + 1}`,
-      percentage: percentMatch ? `${percentMatch[1]}%` : raw,
-    };
-  });
+  return toList(values).slice(0, 4);
 }
 
 function parseTestimonials(profile) {
@@ -133,21 +135,24 @@ function RoboticsTheme({ student, profile }) {
         <section className="reveal active">
           <h2>Video gallery</h2>
           <div className="gallery-grid">
-            {videos.map((v, i) => (
-              <div className="gallery-tile" key={`${v}-${i}`}>
-                <video src={v} controls />
-              </div>
-            ))}
+            {videos.map((v, i) => {
+              const embedUrl = convertToEmbedUrl(v);
+              const isYouTube = embedUrl.includes('youtube.com/embed');
+              return (
+                <div className="gallery-tile" key={`${v}-${i}`}>
+                  {isYouTube ? <iframe src={embedUrl} frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen /> : <video src={v} controls />}
+                </div>
+              );
+            })}
           </div>
         </section>
 
         <section className="reveal active">
           <h2>Academic Results</h2>
-          <div className="results-grid">
-            {results.map((r) => (
-              <div className="result-card" key={`${r.year}-${r.percentage}`}>
-                <div className="result-year">{r.year}</div>
-                <div className="result-percentage">{r.percentage}</div>
+          <div className="gallery-grid">
+            {results.map((url, i) => (
+              <div className="gallery-tile" key={`${url}-${i}`} onClick={() => window.open(url, '_blank')} style={{cursor: 'pointer'}}>
+                <iframe src={url} frameBorder="0" style={{width: '100%', height: '100%', pointerEvents: 'none'}} />
               </div>
             ))}
           </div>
@@ -261,21 +266,24 @@ function WebTheme({ student, profile }) {
         <section className="reveal active">
           <h2>Video gallery</h2>
           <div className="gallery-grid">
-            {videos.map((v, i) => (
-              <div className="gallery-tile" key={`${v}-${i}`}>
-                <video src={v} controls />
-              </div>
-            ))}
+            {videos.map((v, i) => {
+              const embedUrl = convertToEmbedUrl(v);
+              const isYouTube = embedUrl.includes('youtube.com/embed');
+              return (
+                <div className="gallery-tile" key={`${v}-${i}`}>
+                  {isYouTube ? <iframe src={embedUrl} frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen /> : <video src={v} controls />}
+                </div>
+              );
+            })}
           </div>
         </section>
 
         <section className="reveal active">
           <h2>Academic Results</h2>
-          <div className="results-grid">
-            {results.map((r) => (
-              <div className="result-card" key={`${r.year}-${r.percentage}`}>
-                <div className="result-year">{r.year}</div>
-                <div className="result-percentage">{r.percentage}</div>
+          <div className="gallery-grid">
+            {results.map((url, i) => (
+              <div className="gallery-tile" key={`${url}-${i}`} onClick={() => window.open(url, '_blank')} style={{cursor: 'pointer'}}>
+                <iframe src={url} frameBorder="0" style={{width: '100%', height: '100%', pointerEvents: 'none'}} />
               </div>
             ))}
           </div>
@@ -382,21 +390,24 @@ function DataScienceTheme({ student, profile }) {
         <section className="reveal active">
           <h2>Data Science Tutorials</h2>
           <div className="gallery-grid">
-            {videos.map((v, i) => (
-              <div className="gallery-tile" key={`${v}-${i}`}>
-                <video src={v} controls />
-              </div>
-            ))}
+            {videos.map((v, i) => {
+              const embedUrl = convertToEmbedUrl(v);
+              const isYouTube = embedUrl.includes('youtube.com/embed');
+              return (
+                <div className="gallery-tile" key={`${v}-${i}`}>
+                  {isYouTube ? <iframe src={embedUrl} frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen /> : <video src={v} controls />}
+                </div>
+              );
+            })}
           </div>
         </section>
 
         <section className="reveal active">
           <h2>Academic Results</h2>
-          <div className="results-grid">
-            {results.map((r) => (
-              <div className="result-card" key={`${r.year}-${r.percentage}`}>
-                <div className="result-year">{r.year}</div>
-                <div className="result-percentage">{r.percentage}</div>
+          <div className="gallery-grid">
+            {results.map((url, i) => (
+              <div className="gallery-tile" key={`${url}-${i}`} onClick={() => window.open(url, '_blank')} style={{cursor: 'pointer'}}>
+                <iframe src={url} frameBorder="0" style={{width: '100%', height: '100%', pointerEvents: 'none'}} />
               </div>
             ))}
           </div>
@@ -503,21 +514,24 @@ function SportsTheme({ student, profile }) {
         <section className="reveal active">
           <h2>Action Videos</h2>
           <div className="gallery-grid">
-            {videos.map((v, i) => (
-              <div className="gallery-tile" key={`${v}-${i}`}>
-                <video src={v} controls />
-              </div>
-            ))}
+            {videos.map((v, i) => {
+              const embedUrl = convertToEmbedUrl(v);
+              const isYouTube = embedUrl.includes('youtube.com/embed');
+              return (
+                <div className="gallery-tile" key={`${v}-${i}`}>
+                  {isYouTube ? <iframe src={embedUrl} frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen /> : <video src={v} controls />}
+                </div>
+              );
+            })}
           </div>
         </section>
 
         <section className="reveal active">
           <h2>Performance Results</h2>
-          <div className="results-grid">
-            {results.map((r) => (
-              <div className="result-card" key={`${r.year}-${r.percentage}`}>
-                <div className="result-year">{r.year}</div>
-                <div className="result-percentage">{r.percentage}</div>
+          <div className="gallery-grid">
+            {results.map((url, i) => (
+              <div className="gallery-tile" key={`${url}-${i}`} onClick={() => window.open(url, '_blank')} style={{cursor: 'pointer'}}>
+                <iframe src={url} frameBorder="0" style={{width: '100%', height: '100%', pointerEvents: 'none'}} />
               </div>
             ))}
           </div>
@@ -624,21 +638,24 @@ function GenericTheme({ student, profile, themeClass, themeName }) {
         <section className="reveal active">
           <h2>Video gallery</h2>
           <div className="gallery-grid">
-            {videos.map((v, i) => (
-              <div className="gallery-tile" key={`${v}-${i}`}>
-                <video src={v} controls />
-              </div>
-            ))}
+            {videos.map((v, i) => {
+              const embedUrl = convertToEmbedUrl(v);
+              const isYouTube = embedUrl.includes('youtube.com/embed');
+              return (
+                <div className="gallery-tile" key={`${v}-${i}`}>
+                  {isYouTube ? <iframe src={embedUrl} frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen /> : <video src={v} controls />}
+                </div>
+              );
+            })}
           </div>
         </section>
 
         <section className="reveal active">
           <h2>Academic Results</h2>
-          <div className="results-grid">
-            {results.map((r) => (
-              <div className="result-card" key={`${r.year}-${r.percentage}`}>
-                <div className="result-year">{r.year}</div>
-                <div className="result-percentage">{r.percentage}</div>
+          <div className="gallery-grid">
+            {results.map((url, i) => (
+              <div className="gallery-tile" key={`${url}-${i}`} onClick={() => window.open(url, '_blank')} style={{cursor: 'pointer'}}>
+                <iframe src={url} frameBorder="0" style={{width: '100%', height: '100%', pointerEvents: 'none'}} />
               </div>
             ))}
           </div>

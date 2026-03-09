@@ -77,21 +77,32 @@ export default function TeacherDashboard() {
       if (lines.length < 2) throw new Error("CSV must have header and at least 1 student");
       
       const header = lines[0].toLowerCase().split(",").map(h => h.trim());
-      const nameIdx = header.indexOf("name");
-      const classIdx = header.indexOf("class");
-      const sectionIdx = header.indexOf("section");
+      const getIdx = (col) => header.indexOf(col);
       
-      if (nameIdx === -1) throw new Error("CSV must have 'name' column");
+      if (getIdx("name") === -1) throw new Error("CSV must have 'name' column");
       
       const students = [];
       for (let i = 1; i < lines.length; i++) {
         const cols = lines[i].split(",").map(c => c.trim());
-        const name = cols[nameIdx];
+        const name = cols[getIdx("name")];
         if (!name) continue;
         students.push({
           full_name: name,
-          class: classIdx !== -1 ? cols[classIdx] : null,
-          section: sectionIdx !== -1 ? cols[sectionIdx] : null
+          class: getIdx("class") !== -1 ? cols[getIdx("class")] : null,
+          section: getIdx("section") !== -1 ? cols[getIdx("section")] : null,
+          theme: getIdx("theme") !== -1 ? cols[getIdx("theme")] : null,
+          firstName: getIdx("firstname") !== -1 ? cols[getIdx("firstname")] : null,
+          middleName: getIdx("middlename") !== -1 ? cols[getIdx("middlename")] : null,
+          lastName: getIdx("lastname") !== -1 ? cols[getIdx("lastname")] : null,
+          coreSkills: getIdx("coreskills") !== -1 ? cols[getIdx("coreskills")] : null,
+          location: getIdx("location") !== -1 ? cols[getIdx("location")] : null,
+          homeAddress: getIdx("homeaddress") !== -1 ? cols[getIdx("homeaddress")] : null,
+          awards: getIdx("awards") !== -1 ? cols[getIdx("awards")] : null,
+          certificates: getIdx("certificates") !== -1 ? cols[getIdx("certificates")] : null,
+          mobile: getIdx("mobile") !== -1 ? cols[getIdx("mobile")] : null,
+          email: getIdx("email") !== -1 ? cols[getIdx("email")] : null,
+          schoolName: getIdx("schoolname") !== -1 ? cols[getIdx("schoolname")] : null,
+          testimonials: getIdx("testimonials") !== -1 ? cols[getIdx("testimonials")] : null
         });
       }
       
@@ -165,8 +176,25 @@ export default function TeacherDashboard() {
           
           <h3>Bulk Upload Students</h3>
           <p style={{ fontSize: "13px", color: "#64748b", marginBottom: "10px" }}>
-            Upload CSV file with columns: <strong>name</strong> (required), <strong>class</strong> (optional), <strong>section</strong> (optional)
+            Upload CSV with: <strong>name</strong> (required), class, section, theme, firstName, middleName, lastName, coreSkills, location, homeAddress, awards, certificates, mobile, email, schoolName, testimonials
           </p>
+          <button 
+            className="ui-btn secondary" 
+            style={{ marginBottom: "10px", fontSize: "12px", padding: "6px 12px" }}
+            onClick={() => {
+              const csv = `name,class,section,theme,firstName,middleName,lastName,coreSkills,location,homeAddress,awards,certificates,mobile,email,schoolName,testimonials
+Rahul Sharma,10th,A,Robotics,Rahul,,Sharma,Python;JavaScript;AI,Mumbai,123 MG Road,Robotics Winner;Science Fair Gold,Python Cert;AI Workshop,9876543210,rahul@email.com,DPS School,Great student;Active participant`;
+              const blob = new Blob([csv], { type: 'text/csv' });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = 'sample_students.csv';
+              a.click();
+              URL.revokeObjectURL(url);
+            }}
+          >
+            Download Sample CSV
+          </button>
           <div className="ui-field">
             <input 
               type="file" 
