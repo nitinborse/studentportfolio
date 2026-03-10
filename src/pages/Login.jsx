@@ -11,11 +11,29 @@ export default function Login() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(false);
   const [err, setErr] = useState("");
   const [msg, setMsg] = useState("");
   const [showForgot, setShowForgot] = useState(false);
   const [resetEmail, setResetEmail] = useState("");
   const [resetting, setResetting] = useState(false);
+
+  useEffect(() => {
+    const savedEmail = localStorage.getItem('rememberedEmail');
+    if (savedEmail) {
+      setEmail(savedEmail);
+      setRememberMe(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    const savedEmail = localStorage.getItem('rememberedEmail');
+    if (savedEmail === email && email) {
+      setRememberMe(true);
+    } else {
+      setRememberMe(false);
+    }
+  }, [email]);
 
   useEffect(() => {
     if (loading) return;
@@ -27,6 +45,14 @@ export default function Login() {
     setErr("");
     setMsg("");
     try {
+      if (rememberMe) {
+        localStorage.setItem('rememberedEmail', email);
+      } else {
+        const savedEmail = localStorage.getItem('rememberedEmail');
+        if (savedEmail === email) {
+          localStorage.removeItem('rememberedEmail');
+        }
+      }
       await login(email, password);
       navigate("/post-login", { replace: true });
     } catch (error) {
@@ -40,15 +66,19 @@ export default function Login() {
     setMsg("");
     setResetting(true);
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+      const emailToSend = resetEmail.trim();
+      console.log('Sending reset email to:', emailToSend, 'Type:', typeof emailToSend);
+      const { data, error } = await supabase.auth.resetPasswordForEmail(emailToSend, {
         redirectTo: `${window.location.origin}/reset-password`,
       });
+      console.log('Response:', { data, error });
       if (error) throw error;
       setMsg("Password reset link sent to your email");
       setResetEmail("");
       setTimeout(() => setShowForgot(false), 2000);
     } catch (error) {
-      setErr(error.message);
+      console.error('Reset error:', error);
+      setErr(error.message || "Failed to send reset email. Please check if the email exists.");
     } finally {
       setResetting(false);
     }
@@ -72,6 +102,7 @@ export default function Login() {
                   value={resetEmail}
                   onChange={(e) => setResetEmail(e.target.value)}
                   required
+                  autoComplete="email"
                   style={{ padding: "12px", fontSize: "14px", borderRadius: "8px", border: "1px solid #e2e8f0" }}
                 />
               </div>
@@ -157,12 +188,12 @@ export default function Login() {
 
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "10px" }}>
               <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "14px", color: "#64748b", cursor: "pointer" }}>
-                <input type="checkbox" style={{ width: "16px", height: "16px", cursor: "pointer", accentColor: "#0ea5e9" }} />
+                <input type="checkbox" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} style={{ width: "16px", height: "16px", cursor: "pointer", accentColor: "#0ea5e9" }} />
                 Remember me
               </label>
-              <button type="button" onClick={() => setShowForgot(true)} style={{ background: "none", border: "none", color: "#0ea5e9", fontSize: "14px", fontWeight: "600", cursor: "pointer" }}>
+              {/* <button type="button" onClick={() => setShowForgot(true)} style={{ background: "none", border: "none", color: "#0ea5e9", fontSize: "14px", fontWeight: "600", cursor: "pointer" }}>
                 Forgot Password?
-              </button>
+              </button> */}
             </div>
 
             <button type="submit" style={{ width: "100%", padding: "14px", fontSize: "16px", fontWeight: "600", color: "#fff", background: "linear-gradient(135deg, #0ea5e9, #0369a1)", border: "none", borderRadius: "10px", cursor: "pointer", transition: "transform 0.2s", boxShadow: "0 4px 12px rgba(14, 165, 233, 0.4)" }} onMouseOver={(e) => e.target.style.transform = "translateY(-2px)"} onMouseOut={(e) => e.target.style.transform = "translateY(0)"}>
