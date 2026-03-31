@@ -33,9 +33,38 @@ export default function StudentPublicProfile() {
     };
   }, [studentName]);
 
-  if (loading) return <div style={{ padding: 20 }}>Loading student profile...</div>;
-  if (err) return <div style={{ padding: 20, color: "red" }}>{err}</div>;
-  if (!payload?.student) return <div style={{ padding: 20 }}>Student profile not found.</div>;
+  if (loading) {
+    return (
+      <div className="ui-center">
+        <div className="ui-card" style={{ maxWidth: 420, width: "100%", textAlign: "center" }}>
+          <h3>Loading profile...</h3>
+          <p style={{ color: "#64748b" }}>Preparing the student portfolio.</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (err) {
+    return (
+      <div className="ui-center">
+        <div className="ui-card" style={{ maxWidth: 460, width: "100%", textAlign: "center" }}>
+          <h3>Unable to load profile</h3>
+          <p className="ui-msg err">{err}</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!payload?.student) {
+    return (
+      <div className="ui-center">
+        <div className="ui-card" style={{ maxWidth: 420, width: "100%", textAlign: "center" }}>
+          <h3>Profile not found</h3>
+          <p style={{ color: "#64748b" }}>The requested student profile does not exist.</p>
+        </div>
+      </div>
+    );
+  }
 
   const student = payload.student;
   const p = payload.profile_data || {};

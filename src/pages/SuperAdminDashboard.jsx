@@ -230,7 +230,7 @@ export default function SuperAdminDashboard() {
           </form>
         </div>
 
-        {/* <div className="ui-card">
+        <div className="ui-card">
           <h3>Filters</h3>
           <div className="ui-grid">
             <div className="ui-field">
@@ -257,7 +257,7 @@ export default function SuperAdminDashboard() {
                 : "Viewing all schools."}
             </p>
           </div>
-        </div> */}
+        </div>
       </div>
 
       <div className="ui-stat-grid">

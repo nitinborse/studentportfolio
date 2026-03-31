@@ -153,7 +153,7 @@ function normalizeProfileData(studentRow, raw) {
 }
 
 export default function StudentProfileEditor() {
-  const { logout } = useAuth();
+  const { profile: authProfile, logout } = useAuth();
   const navigate = useNavigate();
   const { studentId } = useParams();
   const [student, setStudent] = useState(null);
@@ -180,6 +180,12 @@ export default function StudentProfileEditor() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
     [student?.slug, student?.full_name]
   );
+
+  const dashboardPath = useMemo(() => {
+    if (authProfile?.role === "super_admin") return "/super-admin";
+    if (authProfile?.role === "admin") return "/admin";
+    return "/teacher";
+  }, [authProfile?.role]);
 
   useEffect(() => {
     let alive = true;
@@ -376,8 +382,27 @@ export default function StudentProfileEditor() {
     }
   }
 
-  if (loading) return <div style={{ padding: 20 }}>Loading editor...</div>;
-  if (err && !student) return <div style={{ padding: 20, color: "red" }}>{err}</div>;
+  if (loading) {
+    return (
+      <div className="ui-center">
+        <div className="ui-card" style={{ maxWidth: 420, width: "100%", textAlign: "center" }}>
+          <h3>Loading editor...</h3>
+          <p style={{ color: "#64748b" }}>Preparing student profile data.</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (err && !student) {
+    return (
+      <div className="ui-center">
+        <div className="ui-card" style={{ maxWidth: 460, width: "100%", textAlign: "center" }}>
+          <h3>Unable to load editor</h3>
+          <p className="ui-msg err">{err}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="spe-page">
@@ -387,7 +412,7 @@ export default function StudentProfileEditor() {
           <div className="spe-meta">
             <span className="spe-chip">Student: {student?.full_name}</span>
             <span className="spe-chip">School: {student?.school_id || "-"}</span>
-            <span className="spe-chip"><Link to="/teacher" className="spe-link">Back to Dashboard</Link></span>
+            <span className="spe-chip"><Link to={dashboardPath} className="spe-link">Back to Dashboard</Link></span>
             <button className="ui-btn danger" onClick={async () => { await logout(); navigate("/login"); }} style={{padding: "6px 12px", fontSize: "13px"}}>Logout</button>
             {slug && (
               <span className="spe-chip">
@@ -425,7 +450,7 @@ export default function StudentProfileEditor() {
                 ) : (
                   <div className="spe-profile-preview">
                     <img src={previewImages.profilePhoto} alt="Profile" onError={(e) => e.target.style.display = 'none'} />
-                    <button type="button" className="spe-media-remove" onClick={() => { setField("profilePhoto", ""); setPreviewImages(prev => ({ ...prev, profilePhoto: "" })); }}>×</button>
+                    <button type="button" className="spe-media-remove" onClick={() => { setField("profilePhoto", ""); setPreviewImages(prev => ({ ...prev, profilePhoto: "" })); }}>&times;</button>
                   </div>
                 )}
               </div>
@@ -467,7 +492,7 @@ export default function StudentProfileEditor() {
                       updated[i] = e.target.value;
                       setField("coreSkills", updated);
                     }} placeholder={`Skill ${i + 1}`} />
-                    <button type="button" className="spe-remove" onClick={() => setField("coreSkills", profile.coreSkills.filter((_, idx) => idx !== i))}>×</button>
+                    <button type="button" className="spe-remove" onClick={() => setField("coreSkills", profile.coreSkills.filter((_, idx) => idx !== i))}>&times;</button>
                   </div>
                 ))}
               </div>
@@ -511,7 +536,7 @@ export default function StudentProfileEditor() {
                       updated[i] = e.target.value;
                       setField("awards", updated);
                     }} placeholder={`Award ${i + 1}`} />
-                    <button type="button" className="spe-remove" onClick={() => setField("awards", profile.awards.filter((_, idx) => idx !== i))}>×</button>
+                    <button type="button" className="spe-remove" onClick={() => setField("awards", profile.awards.filter((_, idx) => idx !== i))}>&times;</button>
                   </div>
                 ))}
               </div>
@@ -530,7 +555,7 @@ export default function StudentProfileEditor() {
                       updated[i] = e.target.value;
                       setField("certificates", updated);
                     }} placeholder={`Certificate ${i + 1}`} />
-                    <button type="button" className="spe-remove" onClick={() => setField("certificates", profile.certificates.filter((_, idx) => idx !== i))}>×</button>
+                    <button type="button" className="spe-remove" onClick={() => setField("certificates", profile.certificates.filter((_, idx) => idx !== i))}>&times;</button>
                   </div>
                 ))}
               </div>
@@ -549,7 +574,7 @@ export default function StudentProfileEditor() {
                       const updated = profile.resultsLast4.filter((_, idx) => idx !== i);
                       setField("resultsLast4", updated);
                       setPreviewResults(updated);
-                    }}>×</button>
+                    }}>&times;</button>
                   </div>
                 ))}
               </div>
@@ -592,7 +617,7 @@ export default function StudentProfileEditor() {
                       const updated = profile.testimonials.filter((_, idx) => idx !== i);
                       setField("testimonials", updated);
                       if (i === 0) setField("testimonial", updated[0] || "");
-                    }}>×</button>
+                    }}>&times;</button>
                   </div>
                 ))}
               </div>
@@ -611,7 +636,7 @@ export default function StudentProfileEditor() {
                       const updated = profile.classroomImages.filter((_, idx) => idx !== i);
                       setField("classroomImages", updated);
                       setPreviewImages(prev => ({ ...prev, classroomImages: updated }));
-                    }}>×</button>
+                    }}>&times;</button>
                   </div>
                 ))}
               </div>
@@ -649,7 +674,7 @@ export default function StudentProfileEditor() {
                       const updated = profile.personalImages.filter((_, idx) => idx !== i);
                       setField("personalImages", updated);
                       setPreviewImages(prev => ({ ...prev, personalImages: updated }));
-                    }}>×</button>
+                    }}>&times;</button>
                   </div>
                 ))}
               </div>
@@ -687,7 +712,7 @@ export default function StudentProfileEditor() {
                       const updated = profile.videoGallery.filter((_, idx) => idx !== i);
                       setField("videoGallery", updated);
                       setPreviewVideos(updated);
-                    }}>×</button>
+                    }}>&times;</button>
                   </div>
                 ))}
               </div>
@@ -732,3 +757,4 @@ export default function StudentProfileEditor() {
     </div>
   );
 }
+

@@ -126,12 +126,12 @@ export default function Login() {
       {/* Left Side - Branding */}
       <div className="login-left">
         <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, background: "url('data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')" }}></div>
-        <div style={{ position: "relative", zIndex: 1, textAlign: "center" }}>
-          <div style={{ margin: "0 auto 30px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <img src="/chronosphere-logo.png" alt="Chronosphere" style={{ width: "250px", height: "250px", objectFit: "contain", filter: "brightness(0) invert(1)" }} onError={(e) => e.target.style.display = 'none'} />
+        <div className="login-brand-content">
+          <div className="login-logo-wrap">
+            <img src="/chronosphere-logo.png" alt="Chronosphere" className="login-logo" onError={(e) => e.target.style.display = "none"} />
           </div>
-          <h1 style={{ fontSize: "48px", fontWeight: "800", color: "#fff", marginBottom: "16px", letterSpacing: "-1px" }}>Student Portfolio</h1>
-          <p style={{ fontSize: "18px", color: "rgba(255,255,255,0.9)", maxWidth: "400px", lineHeight: "1.6", margin: "0 auto" }}>Manage and showcase student achievements with our comprehensive portfolio management system</p>
+          <h1 className="login-title">Student Portfolio</h1>
+          <p className="login-subtitle">Manage and showcase student achievements with our comprehensive portfolio management system</p>
           <div className="stats-container" style={{ marginTop: "40px", display: "flex", gap: "30px", justifyContent: "center", flexWrap: "wrap" }}>
             <div style={{ textAlign: "center" }}>
               <div className="stat-number" style={{ fontSize: "32px", fontWeight: "700", color: "#fff" }}>500+</div>
@@ -151,61 +151,57 @@ export default function Login() {
 
       {/* Right Side - Login Form */}
       <div className="login-right">
-        <div style={{ width: "100%", maxWidth: "440px" }}>
+        <div className="login-panel">
           <div style={{ marginBottom: "40px" }}>
-            <h2 style={{ fontSize: "32px", fontWeight: "700", background: "linear-gradient(135deg, #0ea5e9, #0369a1)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", marginBottom: "8px" }}>Welcome Back</h2>
-            <p style={{ fontSize: "15px", color: "#64748b" }}>Sign in to access your dashboard</p>
+            <h2 className="login-welcome">Welcome Back</h2>
+            <p className="login-welcome-subtitle">Sign in to access your dashboard</p>
           </div>
 
-          <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+          <form onSubmit={handleSubmit} className="login-form">
             <div>
-              <label style={{ display: "block", fontSize: "14px", fontWeight: "600", color: "#334155", marginBottom: "8px" }}>Email Address</label>
+              <label className="login-label">Email Address</label>
               <input
                 type="email"
                 placeholder="you@school.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                style={{ width: "100%", padding: "14px 16px", fontSize: "15px", border: "2px solid #e2e8f0", borderRadius: "10px", outline: "none", transition: "all 0.2s", boxSizing: "border-box" }}
-                onFocus={(e) => e.target.style.borderColor = "#0ea5e9"}
-                onBlur={(e) => e.target.style.borderColor = "#e2e8f0"}
+                className="login-input"
               />
             </div>
 
             <div>
-              <label style={{ display: "block", fontSize: "14px", fontWeight: "600", color: "#334155", marginBottom: "8px" }}>Password</label>
+              <label className="login-label">Password</label>
               <input
                 type="password"
                 placeholder="Enter your password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                style={{ width: "100%", padding: "14px 16px", fontSize: "15px", border: "2px solid #e2e8f0", borderRadius: "10px", outline: "none", transition: "all 0.2s", boxSizing: "border-box" }}
-                onFocus={(e) => e.target.style.borderColor = "#0ea5e9"}
-                onBlur={(e) => e.target.style.borderColor = "#e2e8f0"}
+                className="login-input"
               />
             </div>
 
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "10px" }}>
-              <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "14px", color: "#64748b", cursor: "pointer" }}>
-                <input type="checkbox" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} style={{ width: "16px", height: "16px", cursor: "pointer", accentColor: "#0ea5e9" }} />
+            <div className="login-meta-row">
+              <label className="login-remember">
+                <input type="checkbox" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} className="login-checkbox" />
                 Remember me
               </label>
-              {/* <button type="button" onClick={() => setShowForgot(true)} style={{ background: "none", border: "none", color: "#0ea5e9", fontSize: "14px", fontWeight: "600", cursor: "pointer" }}>
+              <button type="button" className="login-forgot-btn" onClick={() => setShowForgot(true)}>
                 Forgot Password?
-              </button> */}
+              </button>
             </div>
 
-            <button type="submit" style={{ width: "100%", padding: "14px", fontSize: "16px", fontWeight: "600", color: "#fff", background: "linear-gradient(135deg, #0ea5e9, #0369a1)", border: "none", borderRadius: "10px", cursor: "pointer", transition: "transform 0.2s", boxShadow: "0 4px 12px rgba(14, 165, 233, 0.4)" }} onMouseOver={(e) => e.target.style.transform = "translateY(-2px)"} onMouseOut={(e) => e.target.style.transform = "translateY(0)"}>
+            <button type="submit" className="login-submit">
               Sign In
             </button>
 
-            {err && <div style={{ padding: "12px 16px", background: "#fee2e2", color: "#dc2626", borderRadius: "8px", fontSize: "14px", textAlign: "center" }}>{err}</div>}
+            {err && <div className="login-error">{err}</div>}
           </form>
-
-          <p style={{ marginTop: "30px", textAlign: "center", fontSize: "13px", color: "#94a3b8" }}>© 2024 Student Portfolio System. All rights reserved.</p>
+          <p className="login-footer">&copy; 2024 Student Portfolio System. All rights reserved.</p>
         </div>
       </div>
     </div>
   );
 }
+

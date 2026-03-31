@@ -41,6 +41,12 @@ a:hover {
   text-decoration: underline;
 }
 
+a:focus-visible {
+  outline: 3px solid rgba(14, 165, 233, 0.45);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
 input,
 select,
 textarea,
@@ -120,6 +126,11 @@ button {
   border-color: rgba(125, 211, 252, 0.55);
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.2), rgba(14, 165, 233, 0.18));
   text-decoration: none;
+}
+
+.ui-chip:focus-visible {
+  outline: 3px solid rgba(125, 211, 252, 0.7);
+  outline-offset: 2px;
 }
 
 .ui-layout {
@@ -219,9 +230,20 @@ button {
   box-shadow: 0 12px 18px -14px rgba(2, 6, 23, 0.95);
 }
 
+.ui-btn:focus-visible {
+  outline: 3px solid rgba(14, 165, 233, 0.5);
+  outline-offset: 2px;
+}
+
 .ui-btn.primary {
   color: #fff;
   background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+}
+
+.ui-btn.secondary {
+  color: #1e293b;
+  background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+  border: 1px solid #cbd5e1;
 }
 
 .ui-btn.danger {
@@ -245,6 +267,22 @@ button {
 
 .ui-msg.err {
   color: var(--danger);
+}
+
+.ui-link {
+  color: #0369a1;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.ui-link:hover {
+  text-decoration: underline;
+}
+
+.ui-link:focus-visible {
+  outline: 3px solid rgba(14, 165, 233, 0.45);
+  outline-offset: 2px;
+  border-radius: 6px;
 }
 
 .ui-table-wrap {
@@ -406,6 +444,13 @@ button {
   font-weight: 700;
   line-height: 1.1;
   letter-spacing: -0.02em;
+}
+
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid rgba(14, 165, 233, 0.35);
+  outline-offset: 1px;
 }
 
 @media (max-width: 980px) {
